@@ -136,6 +136,8 @@ class pyqtgui(QMainWindow):
         self.setWindowTitle("RELeARN - Structural Plasiticity Simulation")
         self.resize(800, 600)
 
+        self.setWindowIcon(QIcon('plasticity.jpg'))
+
         self.Neurons = neuron_count
         self.Synapses = synapse_count
 
