@@ -4,7 +4,9 @@ import numpy as np
 from PyQt6.QtWidgets import QApplication, QLineEdit, QMainWindow, QPushButton, QVBoxLayout, QHBoxLayout, QWidget, QSlider, QLabel, QStyleFactory
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QPalette, QColor, QIcon, QIntValidator
+from graphviz import Digraph
 
+# Settings for dark mode
 def get_dark_palette():
     dark_palette = QPalette()
         
@@ -37,6 +39,7 @@ def get_white_palette():
 class guilauncher(QMainWindow):
     def __init__(self):
         super().__init__()
+        # Initializing window
         self.setWindowTitle("RELeARN - Launcher")
         self.resize(300, 125)
         self.setMaximumSize(300, 125)
@@ -45,6 +48,7 @@ class guilauncher(QMainWindow):
         if fusion_style:
             QApplication.instance().setStyle(fusion_style)
 
+        # Setting dark mode as default
         QApplication.instance().setPalette(get_dark_palette())
 
         central_widget = QWidget()
@@ -67,10 +71,12 @@ class guilauncher(QMainWindow):
         self.dark_mode.clicked.connect(self.toggle_dark_mode)
         layout.addWidget(self.dark_mode)
 
+        # Adding input fields for neurons and synapses
         self.add_line(layout, "Number of Neurons:", "input_neurons", "100", True)
-        
+        # TODO add input fields for dendritic and axonal elements
         self.add_line(layout, "Number of Synapses per Neuron:", "input_synapses", "10", True)
 
+        # Adding buttons
         self.start_button = QPushButton("Start Simulation")
         self.start_button.setMaximumSize(300, 50)
         self.start_button.setGeometry
@@ -145,6 +151,8 @@ class pyqtgui(QMainWindow):
         self.setCentralWidget(central_widget)
         layout = QVBoxLayout(central_widget)
 
+        # TODO replace with graph
+        # TODO start of section
         # test plot
         self.plot_widget = pg.PlotWidget()
         layout.addWidget(self.plot_widget)
@@ -166,6 +174,7 @@ class pyqtgui(QMainWindow):
         layout.addWidget(self.button)
         # connecting test signal "Random Signal" to slot (function)
         self.button.clicked.connect(self.do_something)
+        # TODO end of section
 
         self.exit_button = QPushButton("Exit")
         self.exit_button.setStyleSheet("background-color: #A82424; color: black;")
