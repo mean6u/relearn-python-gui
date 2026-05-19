@@ -67,11 +67,12 @@ class guilauncher(QMainWindow):
         #layout.addLayout(neuron_layout)
         
         # doesn't toggle, just activates bad dark mode
-        self.dark_mode = QPushButton("Toggle Dark Mode")
-        self.dark_mode.setCheckable(True)
-        self.dark_mode.setMaximumSize(300, 50)
-        self.dark_mode.clicked.connect(self.toggle_dark_mode)
-        layout.addWidget(self.dark_mode)
+        self.dark_mode_btn = QPushButton("Toggle Dark Mode")
+        self.dark_mode_btn.setCheckable(True)
+        self.dark_mode_btn.setMaximumSize(300, 50)
+        self.dark_mode_btn.clicked.connect(self.toggle_dark_mode)
+        layout.addWidget(self.dark_mode_btn)
+        self.dark_mode_btn.setChecked(True)
 
         # Adding input fields for neurons and synapses
         self.add_line(layout, "Number of Neurons:", "input_neurons", "100", True)
