@@ -4,7 +4,6 @@ import numpy as np
 from PyQt6.QtWidgets import QApplication, QLineEdit, QMainWindow, QPushButton, QVBoxLayout, QHBoxLayout, QWidget, QSlider, QLabel, QStyleFactory
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QPalette, QColor, QIcon, QIntValidator
-from graphviz import Digraph
 
 # Settings for dark mode
 def get_dark_palette():
@@ -76,6 +75,8 @@ class guilauncher(QMainWindow):
         # TODO add input fields for dendritic and axonal elements
         self.add_line(layout, "Number of Synapses per Neuron:", "input_synapses", "10", True)
 
+        self.add_line(layout, "Growth Rate", "input_growth", "1", True)
+
         # Adding buttons
         self.start_button = QPushButton("Start Simulation")
         self.start_button.setMaximumSize(300, 50)
@@ -112,13 +113,14 @@ class guilauncher(QMainWindow):
     def handle_input(self):
         user_input_neurons = int(self.input_neurons.text() or self.input_neurons.placeholderText())
         user_input_synapses = int(self.input_synapses.text() or self.input_synapses.placeholderText())
-        return user_input_neurons, user_input_synapses
+        user_input_growth = int(self.input_growth.text() or self.input_growth.placeholderText())
+        return user_input_neurons, user_input_synapses, user_input_growth
 
     # start implementing the connection logic
     def start_sim(self):
-        output = self.handle_input()
+        inputs = self.handle_input()
         #print(output[0], output[1])
-        self.sim_gui = pyqtgui(output[0], output[1])
+        self.sim_gui = pyqtgui(inputs[0], inputs[1], inputs[2])
         self.sim_gui.show()
         self.close()
 
@@ -136,8 +138,8 @@ class guilauncher(QMainWindow):
 
 
 
-class pyqtgui(QMainWindow):
-    def __init__(self, neuron_count, synapse_count):
+class simulation(QMainWindow):
+    def __init__(self, neuron_count, synapse_count, growth_rate):
         super().__init__()
         self.setWindowTitle("RELeARN - Structural Plasiticity Simulation")
         self.resize(800, 600)
