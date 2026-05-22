@@ -8,7 +8,6 @@ class NeuronType(Enum):
     
 class Neuron:
     def __init__(self, x, y, id, neuron_type: NeuronType):
-        # List of dendritic and axonal elements belonging to the neuron
         self.id = id
         self.type = neuron_type
         
@@ -43,6 +42,25 @@ class Neuron:
         self.vac_D_ex = 0
         self.vac_D_in = 0
 
+    def step_electrical(self, I: float, dt:float = 1.0) -> bool:
+        #I = I^{ext} + I^{syn}
+        dv_dt = 0.04*self.v**2 + 5*self.v + 140 - self.u + I
+
+        du_dt = 0.1*(0.2*self.v - self.u)
+
+        self.v += dv_dt*dt
+        self.u += du_dt*dt
+
+        has_spiked = False
+
+        if self.v >= 30.0:
+            self.v = -65.0
+            self.u += 2.0
+            self.calcium_level += -self.calcium_level/self.tau_ca + self.beta
+
+        return has_spiked
+    
+        
 
 class Network:
     def __init__(self, num_neurons: int):
