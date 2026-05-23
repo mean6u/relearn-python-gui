@@ -75,11 +75,9 @@ class guilauncher(QMainWindow):
         self.dark_mode_btn.setChecked(True)
 
         # Adding input fields for neurons and synapses
-        self.add_line(layout, "Number of Neurons:", "input_neurons", "100", True)
-        # TODO add input fields for dendritic and axonal elements
-        self.add_line(layout, "Number of Synapses per Neuron:", "input_synapses", "10", True)
+        self.add_line(layout, "Number of Neurons:", "input_neurons", "10", True)
 
-        self.add_line(layout, "Growth Rate", "input_growth", "1", True)
+        #self.add_line(layout, "Growth Rate", "input_growth", "1", True)
 
         # Adding buttons
         self.start_button = QPushButton("Start Simulation")
@@ -116,15 +114,14 @@ class guilauncher(QMainWindow):
     
     def handle_input(self):
         user_input_neurons = int(self.input_neurons.text() or self.input_neurons.placeholderText())
-        user_input_synapses = int(self.input_synapses.text() or self.input_synapses.placeholderText())
-        user_input_growth = int(self.input_growth.text() or self.input_growth.placeholderText())
-        return user_input_neurons, user_input_synapses, user_input_growth
+        #user_input_growth = int(self.input_growth.text() or self.input_growth.placeholderText())
+        return user_input_neurons
 
     # start implementing the connection logic
     def start_sim(self):
-        inputs = self.handle_input()
+        input = self.handle_input()
         #print(output[0], output[1])
-        self.sim_gui = simulation(dark_mode, inputs[0], inputs[1], inputs[2])
+        self.sim_gui = simulation(dark_mode, input)
         self.sim_gui.show()
         self.close()
 
@@ -146,7 +143,7 @@ class guilauncher(QMainWindow):
 
 
 class simulation(QMainWindow):
-    def __init__(self, is_dark_mode: bool, neuron_count, synapse_count, growth_rate):
+    def __init__(self, is_dark_mode: bool, neuron_count: int):
         super().__init__()
         
         # slightly reduces performance but prettier
@@ -158,8 +155,7 @@ class simulation(QMainWindow):
         self.setWindowIcon(QIcon('plasticity.jpg'))
 
         self.Neurons = neuron_count
-        self.Synapses = synapse_count
-        self.Growth = growth_rate
+        #self.Growth = growth_rate
 
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
@@ -224,7 +220,7 @@ class simulation(QMainWindow):
 
     # spawn new neurons and connect them using the euclidean distance
     def new_neurons_and_eucl_con(self):
-        pos = np.random.randint(-10, 10, size=(10, 2))
+        pos = np.random.randint(-10, 10, size=(self.Neurons, 2))
         dx = pos[:, 0, np.newaxis] - pos[:, 0]
         dy = pos[:, 1, np.newaxis] - pos[:, 1]
         distances = np.sqrt(dx**2 + dy**2)

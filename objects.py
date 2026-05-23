@@ -10,6 +10,8 @@ class Neuron:
     def __init__(self, x, y, id, neuron_type: NeuronType):
         self.id = id
         self.type = neuron_type
+
+        self.synapses = []
         
         self.x = x
         self.y = y
@@ -81,12 +83,25 @@ class Neuron:
         self.D_ex += dD_ex_dt * dt
         self.D_in += dD_in_dt * dt
 
+class Synapse:
+    def __init__(self, from_neuron: Neuron, to_neuron: Neuron, weight, id:int = 0):
+        self.source_neuron = from_neuron
+        self.goal_neuron = to_neuron
+        self.weight = weight
+        self.id = id
+
 class Network:
     def __init__(self, num_neurons: int):
         self.neurons = []
         self.num_neurons = num_neurons
+        for i in range(0, num_neurons):
+            x = np.random.randint(-10, 10)
+            y = np.random.randint(-10, 10)
+            type = np.random.randint(0,1)
+            self.neurons.append(Neuron(x,y,i,type))
         self.C = np.zeros((num_neurons, num_neurons), dtype=int)
-        self.K = np.zeros(num_neurons, num_neurons)
+        self.K = np.zeros(num_neurons, num_neurons) # funktioniert nicht oder?
+        self.synapses = np.zeros((num_neurons, num_neurons), dtype=int) # functions as "from-to graph", entry equals count of synapses from this neuron to the other one
 
 
 
