@@ -1,0 +1,1 @@
+# class which manages every aspect of the current graph (neurons, synapses, transitions, ...) 
