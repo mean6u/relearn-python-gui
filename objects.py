@@ -53,6 +53,10 @@ class Neuron:
     def get_type(self):
         return self.type
 
+    # should maybe be divided into "inward" and "outward" synapses
+    def get_synapses(self):
+        return self.synapses
+
     def step_electrical(self, I: float, dt:float = 1.0) -> bool:
         #I = I^{ext} + I^{syn}
         dv_dt = 0.04*self.v**2 + 5*self.v + 140 - self.u + I
@@ -103,13 +107,20 @@ class Network:
     def __init__(self, num_neurons: int):
         self.neurons = []
         self.num_neurons = num_neurons
+
+        # INHIBITORY = 0
+        # EXCITATORY = 1
+        types = [0, 1]
+        probabilities = [0.2, 0.8]
+        neuron_types = np.random.choice(types, size=num_neurons, p=probabilities)
+
         for i in range(0, num_neurons):
-            x = np.random.randint(-10, 10)
-            y = np.random.randint(-10, 10)
-            type = np.random.randint(0,1)
-            self.neurons.append(Neuron(x,y,i,type))
+            x = np.random.randint(-100, 100)
+            y = np.random.randint(-100, 100)
+            type = neuron_types[i]
+            self.neurons.append(Neuron(x, y, i, type))
         self.C = np.zeros((num_neurons, num_neurons), dtype=int)
-        self.K = np.zeros(num_neurons, num_neurons) # funktioniert nicht oder?
+        self.K = np.zeros((num_neurons, num_neurons), dtype=int) # hab hier dtype=int hinzugefügt, das hatte gefehlt, aber weiß nicht, welcher typ das sein soll
         self.synapses = np.zeros((num_neurons, num_neurons), dtype=int) # functions as "from-to graph", entry equals count of synapses from this neuron to the other one
 
     def get_neurons(self):
@@ -120,8 +131,11 @@ class Network:
     
     def get_synapses(self):
         return self.synapses
+    
+    # should maybe only add 1 to the current value?
+    def update_synapses(self, x, y, value):
+        self.synapses[x,y] += value
 
-
-
-
-
+    # 
+    def reset_synapse(self, x, y):
+        self.synapses[x,y] = 0

@@ -4,7 +4,8 @@ import numpy as np
 from PyQt6.QtWidgets import QApplication, QLineEdit, QMainWindow, QPushButton, QVBoxLayout, QHBoxLayout, QWidget, QSlider, QLabel, QStyleFactory
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QPalette, QColor, QIcon, QIntValidator
-import currentgraph
+from currentgraph import currentgraph
+from objects import NeuronType 
 
 # global variable for dark mode
 dark_mode = True
@@ -146,7 +147,7 @@ class guilauncher(QMainWindow):
 class simulation(QMainWindow):
     def __init__(self, is_dark_mode: bool, neuron_count: int):
         super().__init__()
-        self.graph = currentgraph.currentgraph(neuron_count)
+        self.graph = currentgraph(neuron_count)
         # slightly reduces performance but prettier
         pg.setConfigOptions(antialias=True)
         
@@ -155,14 +156,13 @@ class simulation(QMainWindow):
 
         self.setWindowIcon(QIcon('plasticity.jpg'))
 
-        self.Neurons = neuron_count
-        #self.Growth = growth_rate
+        self.neurons = self.graph.neurons
 
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
         layout = QVBoxLayout(central_widget)
 
-        # ealier used simpler PlotWidget
+        # earlier used simpler PlotWidget
         #self.plot_widget = pg.PlotWidget()
 
         self.plot_widget = pg.GraphicsLayoutWidget()
@@ -183,10 +183,10 @@ class simulation(QMainWindow):
         self.view.addItem(self.network_graph)
 
         button_layout = QHBoxLayout()
-        self.new_neurons_and_eucl_con()
+        self.new_neurons()
         self.random_button = QPushButton("Randomize")
         self.random_button.setStyleSheet("background-color: #00ff00; color: black;")
-        self.random_button.clicked.connect(self.new_neurons_and_eucl_con)
+        self.random_button.clicked.connect(self.new_neurons)
         button_layout.addWidget(self.random_button)
 
         self.exit_button = QPushButton("Exit")
@@ -196,48 +196,25 @@ class simulation(QMainWindow):
 
         layout.addLayout(button_layout)
 
-        # TODO replace with graph
-        # TODO start of section
-        # test plot
-        """
-        time = np.linspace(0, 10, 100)
-        activity = np.sin(time)
-        self.plot_line = self.plot_widget.plot(time, activity, pen=pg.mkPen('g', width=2))
-
-        # test slider
-        self.slider = QSlider(Qt.Orientation.Horizontal)
-        self.slider.setRange(0, 200)
-        self.slider.setValue(100)
-        self.slider.valueChanged.connect(self.change_zoom)
-        layout.addWidget(self.slider)
-
-        # test button
-        self.button = QPushButton("Random Signal")
-        layout.addWidget(self.button)
-        # connecting test signal "Random Signal" to slot (function)
-        self.button.clicked.connect(self.do_something)
-        # TODO end of section
-        """
-
     # spawn new neurons and connect them using the euclidean distance
-    def new_neurons_and_eucl_con(self):
-        pos = np.random.randint(-10, 10, size=(self.Neurons, 2))
-        dx = pos[:, 0, np.newaxis] - pos[:, 0]
-        dy = pos[:, 1, np.newaxis] - pos[:, 1]
-        distances = np.sqrt(dx**2 + dy**2)
-        radius = 5
-        i, j = np.where((distances < radius) & (distances > 0))
-        transition_edges = np.stack((i,j))
-        self.network_graph.setData(pos=pos, adj=transition_edges, pen=pg.mkPen(color=(150, 150, 150), width=2), symbolBrush='g', size=1, symbol='o', pxMode=False)
+    def new_neurons(self):
+        pos = [[n.x, n.y] for n in self.neurons]
+        
+        TYPE_CONFIG = {
+            1: {"symbol": "o", "brush": (46, 204, 113)},
+            0: {"symbol": "s", "brush": (231, 76, 60)}
+        }
 
-    # test purpose
-    def change_zoom(self):
-        cur_value = self.slider.value()
-        print(f"Slider steht auf: {cur_value}")
+        symbols = [TYPE_CONFIG[n.type]["symbol"] for n in self.neurons]
+        colors  = [TYPE_CONFIG[n.type]["brush"] for n in self.neurons]
 
-    def do_something(self):
-        new_activity = np.random.normal(size=100)
-        self.plot_line.setData(new_activity)
+        #dx = pos[:, 0, np.newaxis] - pos[:, 0]
+        #dy = pos[:, 1, np.newaxis] - pos[:, 1]
+        #distances = np.sqrt(dx**2 + dy**2)
+        #radius = 5
+        #i, j = np.where((distances < radius) & (distances > 0))
+        #transition_edges = np.stack((i,j))
+        self.network_graph.setData(pos=pos, adj=None, pen=pg.mkPen(color=(150, 150, 150), width=2), size=14, symbol=symbols, symbolBrush=colors, symbolPen=None)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
