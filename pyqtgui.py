@@ -4,6 +4,7 @@ import numpy as np
 from PyQt6.QtWidgets import QApplication, QLineEdit, QMainWindow, QPushButton, QVBoxLayout, QHBoxLayout, QWidget, QSlider, QLabel, QStyleFactory
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QPalette, QColor, QIcon, QIntValidator
+import currentgraph
 
 # global variable for dark mode
 dark_mode = True
@@ -145,7 +146,7 @@ class guilauncher(QMainWindow):
 class simulation(QMainWindow):
     def __init__(self, is_dark_mode: bool, neuron_count: int):
         super().__init__()
-        
+        self.graph = currentgraph.currentgraph(neuron_count)
         # slightly reduces performance but prettier
         pg.setConfigOptions(antialias=True)
         

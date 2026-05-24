@@ -44,6 +44,15 @@ class Neuron:
         self.vac_D_ex = 0
         self.vac_D_in = 0
 
+    def get_id(self):
+        return self.id
+    
+    def get_coordinates(self):
+        return (self.x,self.y)
+    
+    def get_type(self):
+        return self.type
+
     def step_electrical(self, I: float, dt:float = 1.0) -> bool:
         #I = I^{ext} + I^{syn}
         dv_dt = 0.04*self.v**2 + 5*self.v + 140 - self.u + I
@@ -103,7 +112,14 @@ class Network:
         self.K = np.zeros(num_neurons, num_neurons) # funktioniert nicht oder?
         self.synapses = np.zeros((num_neurons, num_neurons), dtype=int) # functions as "from-to graph", entry equals count of synapses from this neuron to the other one
 
-
+    def get_neurons(self):
+        return self.neurons
+    
+    def get_neuron_count(self):
+        return self.num_neurons
+    
+    def get_synapses(self):
+        return self.synapses
 
 
 
