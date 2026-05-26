@@ -183,10 +183,10 @@ class simulation(QMainWindow):
         self.view.addItem(self.network_graph)
 
         button_layout = QHBoxLayout()
-        self.new_neurons()
+        self.spawn_neurons()
         self.random_button = QPushButton("Randomize")
         self.random_button.setStyleSheet("background-color: #00ff00; color: black;")
-        self.random_button.clicked.connect(self.new_neurons)
+        self.random_button.clicked.connect(self.spawn_neurons)
         button_layout.addWidget(self.random_button)
 
         self.exit_button = QPushButton("Exit")
@@ -196,24 +196,19 @@ class simulation(QMainWindow):
 
         layout.addLayout(button_layout)
 
-    # spawn new neurons and connect them using the euclidean distance
-    def new_neurons(self):
-        pos = [[n.x, n.y] for n in self.neurons]
+    # Spawn new neurons based on input values in the graph
+    def spawn_neurons(self):
+        # TODO Changed to tuple (replaced brackets [])
+        pos = [(n.x, n.y) for n in self.neurons]
         
         TYPE_CONFIG = {
             1: {"symbol": "o", "brush": (46, 204, 113)},
-            0: {"symbol": "s", "brush": (231, 76, 60)}
+            0: {"symbol": "s", "brush": (231, 76, 60)},
         }
 
         symbols = [TYPE_CONFIG[n.type]["symbol"] for n in self.neurons]
         colors  = [TYPE_CONFIG[n.type]["brush"] for n in self.neurons]
 
-        #dx = pos[:, 0, np.newaxis] - pos[:, 0]
-        #dy = pos[:, 1, np.newaxis] - pos[:, 1]
-        #distances = np.sqrt(dx**2 + dy**2)
-        #radius = 5
-        #i, j = np.where((distances < radius) & (distances > 0))
-        #transition_edges = np.stack((i,j))
         self.network_graph.setData(pos=pos, adj=None, pen=pg.mkPen(color=(150, 150, 150), width=2), size=14, symbol=symbols, symbolBrush=colors, symbolPen=None)
 
 if __name__ == "__main__":

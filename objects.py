@@ -63,6 +63,8 @@ class Neuron:
     def get_synapses(self):
         return self.synapses
 
+    # TODO import calc.py and use its formula
+
     def step_electrical(self, I: float, dt:float = 1.0) -> bool:
         #I = I^{ext} + I^{syn}
         dv_dt = 0.04*self.v**2 + 5*self.v + 140 - self.u + I
@@ -118,15 +120,15 @@ class Network:
         self.inhibitory = []
         self.num_neurons = num_neurons
 
-        # types = [NeuronType.INHIBITORY, NeuronType.EXCITATORY]
-        # probabilities = [inhibitory_probability, excitatory_probability]
-        types = [NeuronType.EXCITATORY, NeuronType.INHIBITORY]
+        types = [NeuronType.INHIBITORY, NeuronType.EXCITATORY]
+        probabilities = [inhibitory_probability, excitatory_probability]
+        # types = [NeuronType.EXCITATORY, NeuronType.INHIBITORY]
         neuron_types = np.zeros(num_neurons)
         num_ex = -1
         if exact_percentage:
             num_ex = round(excitatory_probability * num_neurons)
-            neuron_types[:num_ex] = NeuronType.EXCITATORY
-            neuron_types[num_ex:] = NeuronType.INHIBITORY
+            neuron_types[:num_ex] = 1
+            neuron_types[num_ex:] = 0
         else:
             probabilities = [excitatory_probability, inhibitory_probability]
             neuron_types = np.random.choice(types, size=num_neurons, p=probabilities)
@@ -135,7 +137,7 @@ class Network:
         neuron_types.sort()
         # TODO Distribute inhibitory neurons among excitatory ones (“within limits of excitatory”)
         # TODO Comply to guidelines regarding excitatory / inhibitory spacing (see discord screenshot)
-
+        # TODO 
         for i in range(num_neurons):
             x = np.random.randint(-100, 100)
             y = np.random.randint(-100, 100)
@@ -154,13 +156,13 @@ class Network:
         for i in range(num_ex):
             x = np.random.randint(-100, 100)
             y = np.random.randint(-100, 100)
-            if x < x_min:
+            if x < extremes[0]:
                 x_min = x
-            elif x > x_max:
+            if x > extremes[1]:
                 x_max = x
-            if y < y_min:
+            if y < extremes[2]:
                 y_min = y
-            elif y > y_max:
+            if y > extremes[3]:
                 y_max = y
             self.neurons.append(Neuron(x, y, i, NeuronType.EXCITATORY))
         
