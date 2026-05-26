@@ -49,6 +49,11 @@ class Neuron:
         self.vac_D_ex = 0
         self.vac_D_in = 0
 
+        # Akkumulatoren für deterministischen Verfall (Equ. 5)
+        self.decay_acc_A = 0.0
+        self.decay_acc_D_ex = 0.0
+        self.decay_acc_D_in = 0.0
+
         # TODO gebundene Elemente nur in Matrix (self.C in Network)?
 
     def get_id(self):
