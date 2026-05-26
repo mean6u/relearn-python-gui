@@ -8,14 +8,18 @@ class NeuronType(Enum):
     
 class Neuron:
     def __init__(self, x, y, id, neuron_type: NeuronType):
+        # Unique id and type (exhibitory or inhibitory)
         self.id = id
         self.type = neuron_type
 
+        # Synapses the neuron posseses
         self.synapses = []
         
+        # Position of neuron
         self.x = x
         self.y = y
         
+        #TODO add explanation 
         #Izhikevich Modell (a=0.1, b=0.2, c=-65.0, d=2.0)
         self.v = -65.0
         self.u = 0.0
