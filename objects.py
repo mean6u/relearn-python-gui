@@ -38,15 +38,17 @@ class Neuron:
         #um erregende Signale von anderen Neuronen zu empfangen.
 
         #Das sind die Zähler für die absolute Gesamtmenge an synaptischen Elementen, die dieses Neuron aktuell besitzt.
-        self.A = 0.0    #Axonale Elemente (Boutons)
-        self.D_ex = 0.0 #Exzitatorische dendritische Elemente (Spines)
-        self.D_in = 0.0 #Inhibitorische dendritische Elemente
+        self.A = 0.0    # Axonale Elemente 
+        self.D_ex = 0.0 # Exzitatorische dendritische Elemente
+        self.D_in = 0.0 # Inhibitorische dendritische Elemente
         
 
         # Vakanzen (Ungebundene Elemente, die für neue Synapsen bereitstehen)
         self.vac_A = 0
         self.vac_D_ex = 0
         self.vac_D_in = 0
+
+        # TODO gebundene Elemente nur in Matrix (self.C in Network)?
 
     def get_id(self):
         return self.id
@@ -99,6 +101,8 @@ class Neuron:
         self.A += dA_dt * dt
         self.D_ex += dD_ex_dt * dt
         self.D_in += dD_in_dt * dt
+    
+        
 
 class Synapse:
     def __init__(self, from_neuron: Neuron, to_neuron: Neuron, weight, id:int = 0):
@@ -108,27 +112,78 @@ class Synapse:
         self.id = id
 
 class Network:
-    def __init__(self, num_neurons: int):
+    def __init__(self, num_neurons: int, excitatory_probability: float = 0.8, inhibitory_probability: float = 0.2, exact_percentage: bool = True):
         self.neurons = []
+        self.excitatory = []
+        self.inhibitory = []
         self.num_neurons = num_neurons
 
-        # INHIBITORY = 0
-        # EXCITATORY = 1
-        types = [0, 1]
-        probabilities = [0.2, 0.8]
-        neuron_types = np.random.choice(types, size=num_neurons, p=probabilities)
+        # types = [NeuronType.INHIBITORY, NeuronType.EXCITATORY]
+        # probabilities = [inhibitory_probability, excitatory_probability]
+        types = [NeuronType.EXCITATORY, NeuronType.INHIBITORY]
+        neuron_types = np.zeros(num_neurons)
+        num_ex = -1
+        if exact_percentage:
+            num_ex = round(excitatory_probability * num_neurons)
+            neuron_types[:num_ex] = NeuronType.EXCITATORY
+            neuron_types[num_ex:] = NeuronType.INHIBITORY
+        else:
+            probabilities = [excitatory_probability, inhibitory_probability]
+            neuron_types = np.random.choice(types, size=num_neurons, p=probabilities)
+            num_ex = neuron_types.count(NeuronType.EXCITATORY)
 
-        for i in range(0, num_neurons):
+        neuron_types.sort()
+        # TODO Distribute inhibitory neurons among excitatory ones (“within limits of excitatory”)
+        # TODO Comply to guidelines regarding excitatory / inhibitory spacing (see discord screenshot)
+
+        for i in range(num_neurons):
             x = np.random.randint(-100, 100)
             y = np.random.randint(-100, 100)
             type = neuron_types[i]
-            self.neurons.append(Neuron(x, y, i, type))
-        self.C = np.zeros((num_neurons, num_neurons), dtype=int)
-        self.K = np.zeros((num_neurons, num_neurons), dtype=int) # hab hier dtype=int hinzugefügt, das hatte gefehlt, aber weiß nicht, welcher typ das sein soll
-        self.synapses = np.zeros((num_neurons, num_neurons), dtype=int) # functions as "from-to graph", entry equals count of synapses from this neuron to the other one
+            _temp = Neuron(x, y, i, type)
+            self.neurons.append(_temp)
+            #_temp ist ein pointer der auf die erstelten Objekte zeit
+            if type == NeuronType.EXCITATORY:
+                self.excitatory.append(_temp)
+            else:
+                self.inhibitory.append(_temp)
+
+        # Extremes of x and y ([x_min, x_max, y_min, y_max])
+        extremes = [100, -100, 100, -100]
+        # Distributing excitatory neurons
+        for i in range(num_ex):
+            x = np.random.randint(-100, 100)
+            y = np.random.randint(-100, 100)
+            if x < x_min:
+                x_min = x
+            elif x > x_max:
+                x_max = x
+            if y < y_min:
+                y_min = y
+            elif y > y_max:
+                y_max = y
+            self.neurons.append(Neuron(x, y, i, NeuronType.EXCITATORY))
+        
+        # Distributing inhibitory neurons
+        for i in range(num_ex, num_neurons):
+            x = np.random.randint(extremes[0], extremes[1])
+            y = np.random.randint(extremes[2], extremes[3])
+        
+
+        # Probability Kernel
+        self.K = np.zeros((num_neurons, num_neurons), dtype=float)
+        # functions as "from-to graph", entry equals count of synapses from this neuron to the other one
+        # TODO matrix of boolean values / 0s and 1s?
+        self.synapses = np.zeros((num_neurons, num_neurons), dtype=int)
 
     def get_neurons(self):
         return self.neurons
+    
+    def get_excitatory_neurons(self):
+        return self.excitatory
+    
+    def get_inhibitory_neurons(self):
+        return self.inhibitory
     
     def get_neuron_count(self):
         return self.num_neurons
@@ -137,9 +192,10 @@ class Network:
         return self.synapses
     
     # should maybe only add 1 to the current value?
-    def update_synapses(self, x, y, value):
-        self.synapses[x,y] += value
+    def update_synapses(self, x: int, y: int, value):
+        self.synapses[x, y] += value
 
     # 
-    def reset_synapse(self, x, y):
-        self.synapses[x,y] = 0
+    def reset_synapse(self, x: int, y: int):
+        self.synapses[x, y] = 0
+        
