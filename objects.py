@@ -80,8 +80,8 @@ class Neuron:
     def calculate_growth_rate(self, eta: float, epsilon: float = 0.7, v: float = 0.0001) -> float:
         return calc.calculate_growth_rate(self, eta, epsilon, v)
 
-    def update_structural_elements(self, dt: float = 100.0):
-        calc.update_structural_elements(self, dt)
+    def update_structural_elements(self, bound_A: int, bound_D_ex: int, bound_D_in: int, dt: float = 100.0):
+        return calc.update_structural_elements(self, bound_A, bound_D_ex, bound_D_in, dt)
     
         
 
@@ -179,4 +179,10 @@ class Network:
     # 
     def reset_synapse(self, x: int, y: int):
         self.synapses[x, y] = 0
+
+    def calculate_distance_kernel(self, sigma: float = 5.0 * 150.0):
+        calc.calculate_distance_kernel(self, sigma)
+        
+    def structural_plasticity_step(self):
+        calc.structural_plasticity_step(self)
         

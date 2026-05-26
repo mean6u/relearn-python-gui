@@ -211,6 +211,8 @@ class simulation(QMainWindow):
 
         self.network_graph.setData(pos=pos, adj=None, pen=pg.mkPen(color=(150, 150, 150), width=2), size=14, symbol=symbols, symbolBrush=colors, symbolPen=None)
 
+    
+
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     gui = guilauncher()
