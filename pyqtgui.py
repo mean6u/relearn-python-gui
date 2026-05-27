@@ -259,10 +259,11 @@ class simulation(QMainWindow):
     def create_paths(self, neuron: Neuron, radius=10):
         path = QPainterPath()
         
-        path.moveTo(-20, -20)
-        path.lineTo(-20.01, -20.01)
-        path.moveTo(20, 20)
-        path.lineTo(20.01, 20.01)
+        # did not fix the issue that there are no synaptic elements displayed
+        #path.moveTo(-20, -20)
+        #path.lineTo(-20.01, -20.01)
+        #path.moveTo(20, 20)
+        #path.lineTo(20.01, 20.01)
 
         axon_count = int(neuron.vac_A)
         dendr_ex_count = int(neuron.vac_D_ex)
