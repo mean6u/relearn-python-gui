@@ -2,7 +2,7 @@ import sys
 import pyqtgraph as pg
 import numpy as np
 from PyQt6.QtWidgets import QApplication, QLineEdit, QMainWindow, QPushButton, QVBoxLayout, QHBoxLayout, QWidget, QSlider, QLabel, QStyleFactory
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QPalette, QColor, QIcon, QIntValidator
 from currentgraph import currentgraph
 from objects import NeuronType 
@@ -43,6 +43,9 @@ def get_white_palette():
 class guilauncher(QMainWindow):
     def __init__(self):
         super().__init__()
+
+        global dark_mode
+
         # Initializing window
         self.setWindowTitle("RELeARN - Launcher")
         self.resize(300, 125)
@@ -53,7 +56,10 @@ class guilauncher(QMainWindow):
             QApplication.instance().setStyle(fusion_style)
 
         # Setting dark mode as default
-        QApplication.instance().setPalette(get_dark_palette())
+        if dark_mode:
+            QApplication.instance().setPalette(get_dark_palette())
+        else:
+            QApplication.instance().setPalette(get_white_palette())
 
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
@@ -71,10 +77,10 @@ class guilauncher(QMainWindow):
         # doesn't toggle, just activates bad dark mode
         self.dark_mode_btn = QPushButton("Toggle Dark Mode")
         self.dark_mode_btn.setCheckable(True)
+        self.dark_mode_btn.setChecked(dark_mode)
         self.dark_mode_btn.setMaximumSize(300, 50)
         self.dark_mode_btn.clicked.connect(self.toggle_dark_mode)
         layout.addWidget(self.dark_mode_btn)
-        self.dark_mode_btn.setChecked(True)
 
         # Adding input fields for neurons and synapses
         self.add_line(layout, "Number of Neurons:", "input_neurons", "10", True)
@@ -83,6 +89,7 @@ class guilauncher(QMainWindow):
 
         # Adding buttons
         self.start_button = QPushButton("Start Simulation")
+        self.start_button.setStyleSheet("background-color: green; color: black; font: bold 14px;")
         self.start_button.setMaximumSize(300, 50)
         self.start_button.setGeometry
         # start implementing the connection logic
@@ -90,7 +97,7 @@ class guilauncher(QMainWindow):
         layout.addWidget(self.start_button)
 
         self.exit_button = QPushButton("Exit")
-        self.exit_button.setStyleSheet("background-color: #A82424; color: black;")
+        self.exit_button.setStyleSheet("background-color: #A82424; color: black; font: bold 14px;")
         self.exit_button.setMaximumSize(300, 50)
         self.exit_button.clicked.connect(self.close)
         layout.addWidget(self.exit_button)
@@ -100,7 +107,12 @@ class guilauncher(QMainWindow):
             new_layout = QHBoxLayout()
         else:
             new_layout = QVBoxLayout()
-        new_layout.addWidget(QLabel(label_text))
+        new_label = QLabel(label_text)
+        new_font = new_label.font()
+        new_font.setBold(True)
+        #new_font.setPointSize(14)
+        new_label.setFont(new_font)
+        new_layout.addWidget(new_label)
         
         input_field = QLineEdit()
         input_field.setPlaceholderText(default_val)
@@ -131,16 +143,14 @@ class guilauncher(QMainWindow):
     # not toggling yet, just applying dark mode, default values become invisible :/
     def toggle_dark_mode(self, checked: bool):
         global dark_mode
-        app = QApplication.instance()
+        dark_mode = checked
 
         if checked:
             cur_palette = get_dark_palette()
-            dark_mode = True
         else:
             cur_palette = get_white_palette()
-            dark_mode = False
 
-        app.setPalette(cur_palette)
+        QApplication.instance().setPalette(cur_palette)
 
 
 
@@ -182,15 +192,24 @@ class simulation(QMainWindow):
         self.network_graph = pg.GraphItem()
         self.view.addItem(self.network_graph)
 
+        self.timer = QTimer()
+        self.timer.timeout.connect(self.simulate_time_stamp)
+        self.timer.start(100)
+
+        self.timer_pause_btn = QPushButton("Pause Simulation")
+        self.timer_pause_btn.clicked.connect(self.toggle_simulation)
+        self.timer_pause_btn.setStyleSheet("background-color: green; color: black; font: bold 14px;")
+        layout.addWidget(self.timer_pause_btn)
+
         button_layout = QHBoxLayout()
         self.spawn_neurons()
-        self.random_button = QPushButton("Randomize")
-        self.random_button.setStyleSheet("background-color: #00ff00; color: black;")
-        self.random_button.clicked.connect(self.spawn_neurons)
+        self.random_button = QPushButton("Return to Launcher")
+        self.random_button.setStyleSheet("background-color: yellow; color: black; font: bold 14px;")
+        self.random_button.clicked.connect(self.return_to_launcher)
         button_layout.addWidget(self.random_button)
 
         self.exit_button = QPushButton("Exit")
-        self.exit_button.setStyleSheet("background-color: #A82424; color: black;")
+        self.exit_button.setStyleSheet("background-color: red; color: black; font: bold 14px;")
         self.exit_button.clicked.connect(self.close)
         button_layout.addWidget(self.exit_button)
 
@@ -198,19 +217,38 @@ class simulation(QMainWindow):
 
     # Spawn new neurons based on input values in the graph
     def spawn_neurons(self):
-        # TODO Changed to tuple (replaced brackets [])
+        # Changed to tuple (replaced brackets [])
         pos = [(n.x, n.y) for n in self.neurons]
         
         TYPE_CONFIG = {
-            1: {"symbol": "o", "brush": (46, 204, 113)},
-            0: {"symbol": "s", "brush": (231, 76, 60)},
+            NeuronType.EXCITATORY: {"symbol": "o", "brush": (46, 204, 113)},
+            NeuronType.INHIBITORY: {"symbol": "s", "brush": (231, 76, 60)},
         }
 
-        symbols = [TYPE_CONFIG[n.type]["symbol"] for n in self.neurons]
-        colors  = [TYPE_CONFIG[n.type]["brush"] for n in self.neurons]
+        symbols = [TYPE_CONFIG[NeuronType(int(getattr(n.type, 'value', n.type)))]["symbol"] for n in self.neurons]
+        colors  = [TYPE_CONFIG[NeuronType(int(getattr(n.type, 'value', n.type)))]["brush"] for n in self.neurons]
 
         self.network_graph.setData(pos=pos, adj=None, pen=pg.mkPen(color=(150, 150, 150), width=2), size=14, symbol=symbols, symbolBrush=colors, symbolPen=None)
 
+    # TODO Implement firing visualization
+    def update_firing_neurons(self):
+        return
+
+    def simulate_time_stamp(self):
+        return
+
+    def toggle_simulation(self):
+        if self.timer.isActive():
+            self.timer.stop()
+            self.timer_pause_btn.setText("Resume Simulation")
+        else:
+            self.timer.start()
+            self.timer_pause_btn.setText("Pause Simulation")
+
+    def return_to_launcher(self):
+        self.launcher = guilauncher()
+        self.launcher.show()
+        self.close()
     
 
 if __name__ == "__main__":

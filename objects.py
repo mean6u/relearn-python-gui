@@ -99,24 +99,26 @@ class Network:
         self.inhibitory = []
         self.num_neurons = num_neurons
 
-        types = [NeuronType.INHIBITORY, NeuronType.EXCITATORY]
+        types = [0, 1]
         probabilities = [inhibitory_probability, excitatory_probability]
         # types = [NeuronType.EXCITATORY, NeuronType.INHIBITORY]
-        neuron_types = np.zeros(num_neurons)
+
+        # was previously a float array (without dtype=int)
+        neuron_types = np.zeros(num_neurons, dtype=int)
         num_ex = -1
         if exact_percentage:
             num_ex = round(excitatory_probability * num_neurons)
-            neuron_types[:num_ex] = 1
-            neuron_types[num_ex:] = 0
+            neuron_types[:num_ex] = 1 # crashed with Enum Types -> therefore used int values instead
+            neuron_types[num_ex:] = 0 # same here
         else:
             probabilities = [excitatory_probability, inhibitory_probability]
             neuron_types = np.random.choice(types, size=num_neurons, p=probabilities)
-            num_ex = neuron_types.count(NeuronType.EXCITATORY)
+            num_ex = np.sum(neuron_types == 1) # numpy summing = more efficient (ig)
 
         neuron_types.sort()
+        
         # TODO Distribute inhibitory neurons among excitatory ones (“within limits of excitatory”)
         # TODO Comply to guidelines regarding excitatory / inhibitory spacing (see discord screenshot)
-        # TODO 
         for i in range(num_neurons):
             x = np.random.randint(-100, 100)
             y = np.random.randint(-100, 100)
@@ -147,8 +149,8 @@ class Network:
         
         # Distributing inhibitory neurons
         for i in range(num_ex, num_neurons):
-            x = np.random.randint(extremes[0], extremes[1])
-            y = np.random.randint(extremes[2], extremes[3])
+            x = np.random.randint(extremes[1], extremes[0]) # was the other way around (first was [0] and second [1]) -> crashes because first entry has to be lower than the second
+            y = np.random.randint(extremes[3], extremes[2]) # was the same here
         
 
         # Probability Kernel
@@ -179,10 +181,9 @@ class Network:
     # 
     def reset_synapse(self, x: int, y: int):
         self.synapses[x, y] = 0
-
+        
     def calculate_distance_kernel(self, sigma: float = 5.0 * 150.0):
         calc.calculate_distance_kernel(self, sigma)
         
     def structural_plasticity_step(self):
         calc.structural_plasticity_step(self)
-        
