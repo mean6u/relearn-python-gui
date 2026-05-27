@@ -84,6 +84,7 @@ class guilauncher(QMainWindow):
 
         # Adding input fields for neurons and synapses
         self.add_line(layout, "Number of Neurons:", "input_neurons", "10", True)
+        self.add_line(layout, "Percentage of excitatory Neurons (%):", "input_exc", "80", True)
 
         #self.add_line(layout, "Growth Rate", "input_growth", "1", True)
 
@@ -128,14 +129,16 @@ class guilauncher(QMainWindow):
     
     def handle_input(self):
         user_input_neurons = int(self.input_neurons.text() or self.input_neurons.placeholderText())
+        user_input_excitatory = int(self.input_exc.text() or self.input_exc.placeholderText())
+
         #user_input_growth = int(self.input_growth.text() or self.input_growth.placeholderText())
-        return user_input_neurons
+        return user_input_neurons, user_input_excitatory
 
     # start implementing the connection logic
     def start_sim(self):
         input = self.handle_input()
         #print(output[0], output[1])
-        self.sim_gui = simulation(dark_mode, input)
+        self.sim_gui = simulation(dark_mode, input[0], input[1])
         self.sim_gui.show()
         self.close()
 
@@ -155,9 +158,9 @@ class guilauncher(QMainWindow):
 
 
 class simulation(QMainWindow):
-    def __init__(self, is_dark_mode: bool, neuron_count: int):
+    def __init__(self, is_dark_mode: bool, neuron_count: int, exc_count: int):
         super().__init__()
-        self.graph = currentgraph(neuron_count)
+        self.graph = currentgraph(neuron_count, exc_count/100, (100-exc_count)/100)
         # slightly reduces performance but prettier
         pg.setConfigOptions(antialias=True)
         
