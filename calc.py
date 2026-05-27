@@ -18,7 +18,8 @@ def step_electrical(neuron, I: float, dt:float = 1.0) -> bool:
     if neuron.v >= 30.0:
         neuron.v = -65.0
         neuron.u += 2.0
-        neuron.calcium_level += -neuron.calcium_level/neuron.tau_ca + neuron.beta
+        neuron.calcium_level += neuron.beta
+        has_spiked = True
 
     return has_spiked
     
@@ -30,9 +31,9 @@ def step_calcium(neuron, dt: float = 1.0):
 def calculate_growth_rate(neuron, eta: float, epsilon: float = 0.7, v: float = 0.0001) -> float:
     """The growth rate of synaptic elements is given by the Gaussian function in Eq. 4, where $\eta_z$ is the optimal calcium level for growth and $\epsilon_z$ determines the width of the Gaussian curve."""
     xi_z = (eta + epsilon)/2
-    zeta_z = (eta + epsilon)/(2*(-np.log(1/2)))
+    zeta_z = (eta - epsilon) / (2 * np.sqrt(-np.log(0.5)))
 
-    dz_dt = v*(2*np.exp(-((neuron.calcium_level - xi_z)/zeta_z))**2 - 1)
+    dz_dt = v*(2.0*np.exp(-((neuron.calcium_level - xi_z)/zeta_z)**2) - 1.0)
     return dz_dt
 
 
@@ -51,9 +52,9 @@ def update_structural_elements(neuron, bound_A: int, bound_D_ex: int, bound_D_in
     #Because $\eta_D = 0.1$ and $\eta_A = 0.4$ lead to network recovery, we compare the results
     #obtained with these values with the experimental data.
   
-    neuron.A += calculate_growth_rate(neuron.calcium_level, eta=0.4) * dt
-    neuron.D_ex += calculate_growth_rate(neuron.calcium_level, eta=0.1) * dt
-    neuron.D_in += calculate_growth_rate(neuron.calcium_level, eta=0.1) * dt
+    neuron.A += calculate_growth_rate(neuron, eta=0.4) * dt
+    neuron.D_ex += calculate_growth_rate(neuron, eta=0.1) * dt
+    neuron.D_in += calculate_growth_rate(neuron, eta=0.1) * dt
 
 
     #Equ. 8: 
@@ -107,26 +108,24 @@ def calculate_distance_kernel(network, sigma: float = 5.0 * 150.0):
 
 
 def structural_plasticity_step(network):
-        """Wird alle 100 ms aufgerufen."""
-        # Listen für Löschaufträge
-        deletions = []
+    """Wird alle 100 ms aufgerufen."""
+    deletions = []
 
-        # 1. Update jedes Neurons und Sammeln der Deltas
-        for i, neuron in enumerate(network.neurons):
-            # A) Herausfinden, wie viele Elemente aktuell gebunden sind
-            bound_A = np.sum(network.get_outgoing_synapses(i)) # Ausgehende Synapsen (Spalte i)
-            bound_D_ex = np.sum(int(network.is_excitatory(i)) * network.get_incoming_synapses(i)) # Eingehend von exzitatorischen
-            bound_D_in = np.sum(int(network.is_inhibitory(i)) * network.get_incoming_synapses(i)) # Eingehend von inhibitorischen
+    for i, neuron in enumerate(network.neurons):
+            #Herausfinden, wie viele Elemente aktuell gebunden sind
+        bound_A = np.sum(network.get_outgoing_synapses(i)) # Ausgehende Synapsen (Spalte i)
+        bound_D_ex = np.sum(int(network.is_excitatory(i)) * network.get_incoming_synapses(i)) # Eingehend von exzitatorischen
+        bound_D_in = np.sum(int(network.is_inhibitory(i)) * network.get_incoming_synapses(i)) # Eingehend von inhibitorischen
 
-            # B) Das Neuron aktualisieren
-            deltas = update_structural_elements(neuron, bound_A, bound_D_ex, bound_D_in)
+            # Das Neuron aktualisieren
+        deltas = update_structural_elements(neuron, bound_A, bound_D_ex, bound_D_in)
             
-            # C) Abbau-Aufträge merken
-            if any(val > 0 for val in deltas):
-                deletions.append((i, deltas))
+            #Abbau-Aufträge merken
+        if any(val > 0 for val in deltas):
+            deletions.append((i, deltas))
 
-        # den tatsächlichen Abbau im Netzwerk durchführen
-        network.execute_deletions(deletions)
+    # den tatsächlichen Abbau im Netzwerk durchführen
+    network.execute_deletions(deletions)
         
-        # 3 Hier kommt: Die Synapsen-Bildung (Gleichung 10)
-       
+    #Hier kommt noch die Synapsen-Bildung (Equ. 10)
+        
