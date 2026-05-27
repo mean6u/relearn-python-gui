@@ -13,8 +13,6 @@ class Neuron:
         self.id = id
         self.type = neuron_type
 
-        # Synapses the neuron posseses
-        self.synapses = []
         
         # Position of neuron
         self.x = x
@@ -60,14 +58,10 @@ class Neuron:
         return self.id
     
     def get_coordinates(self):
-        return (self.x,self.y)
+        return (self.x, self.y)
     
     def get_type(self):
         return self.type
-
-    # should maybe be divided into "inward" and "outward" synapses
-    def get_synapses(self):
-        return self.synapses
 
     # TODO import calc.py and use its formula
 
@@ -174,11 +168,24 @@ class Network:
     def get_synapses(self):
         return self.synapses
     
+    def get_outgoing_synapses(self, neuron_index: int):
+        return self.synapses[:, neuron_index]
+    
+    def get_incoming_synapses(self, neuron_index: int):
+        return self.synapses[neuron_index, :]
+    
+    def is_inhibitory(self, neuron_index: int):
+        return self.neurons[neuron_index].get_type() == NeuronType.INHIBITORY
+
+    def is_excitatory(self, neuron_index: int):
+        return self.neurons[neuron_index].get_type() == NeuronType.EXCITATORY
+    
     # should maybe only add 1 to the current value?
     def update_synapses(self, x: int, y: int, value):
         self.synapses[x, y] += value
 
-    # 
+    
+
     def reset_synapse(self, x: int, y: int):
         self.synapses[x, y] = 0
         
@@ -187,3 +194,8 @@ class Network:
         
     def structural_plasticity_step(self):
         calc.structural_plasticity_step(self)
+    
+    def execute_deletions(self, deletions):
+
+        print("Executing deletions:")
+        # TODO implement deletion of synapses based on the deltas (randomly select synapses to delete)

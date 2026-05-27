@@ -51,9 +51,9 @@ def update_structural_elements(neuron, bound_A: int, bound_D_ex: int, bound_D_in
     #Because $\eta_D = 0.1$ and $\eta_A = 0.4$ lead to network recovery, we compare the results
     #obtained with these values with the experimental data.
   
-    neuron.A += neuron.calculate_growth_rate(neuron.calcium_level, eta=0.4) * dt
-    neuron.D_ex += neuron.calculate_growth_rate(neuron.calcium_level, eta=0.1) * dt
-    neuron.D_in += neuron.calculate_growth_rate(neuron.calcium_level, eta=0.1) * dt
+    neuron.A += calculate_growth_rate(neuron.calcium_level, eta=0.4) * dt
+    neuron.D_ex += calculate_growth_rate(neuron.calcium_level, eta=0.1) * dt
+    neuron.D_in += calculate_growth_rate(neuron.calcium_level, eta=0.1) * dt
 
 
     #Equ. 8: 
@@ -103,5 +103,30 @@ def calculate_distance_kernel(network, sigma: float = 5.0 * 150.0):
             if i == j:
                 continue
             dist_sq = (network.neurons[i].x - network.neurons[j].x)**2 + (network.neurons[i].y - network.neurons[j].y)**2
-            # Kernel K_ij berechnen
             network.K[i, j] = math.exp(-dist_sq / sigma**2)
+
+
+def structural_plasticity_step(network):
+        """Wird alle 100 ms aufgerufen."""
+        # Listen für Löschaufträge
+        deletions = []
+
+        # 1. Update jedes Neurons und Sammeln der Deltas
+        for i, neuron in enumerate(network.neurons):
+            # A) Herausfinden, wie viele Elemente aktuell gebunden sind
+            bound_A = np.sum(network.get_outgoing_synapses(i)) # Ausgehende Synapsen (Spalte i)
+            bound_D_ex = np.sum(int(network.is_excitatory(i)) * network.get_incoming_synapses(i)) # Eingehend von exzitatorischen
+            bound_D_in = np.sum(int(network.is_inhibitory(i)) * network.get_incoming_synapses(i)) # Eingehend von inhibitorischen
+
+            # B) Das Neuron aktualisieren
+            deltas = update_structural_elements(neuron, bound_A, bound_D_ex, bound_D_in)
+            
+            # C) Abbau-Aufträge merken
+            if any(val > 0 for val in deltas):
+                deletions.append((i, deltas))
+
+        # den tatsächlichen Abbau im Netzwerk durchführen
+        network.execute_deletions(deletions)
+        
+        # 3 Hier kommt: Die Synapsen-Bildung (Gleichung 10)
+       
