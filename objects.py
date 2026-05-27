@@ -13,8 +13,6 @@ class Neuron:
         self.id = id
         self.type = neuron_type
 
-        # Synapses the neuron posseses
-        self.synapses = []
         
         # Position of neuron
         self.x = x
@@ -45,9 +43,9 @@ class Neuron:
         
 
         # Vakanzen (Ungebundene Elemente, die für neue Synapsen bereitstehen)
-        self.vac_A = 0
-        self.vac_D_ex = 0
-        self.vac_D_in = 0
+        self.vac_A = 0      # Axonal elements
+        self.vac_D_ex = 0   # Dendritic elements (excitatory)
+        self.vac_D_in = 0   # Dendritic elements (inhibitory)
 
         # Akkumulatoren für deterministischen Verfall (Equ. 5)
         self.decay_acc_A = 0.0
@@ -60,14 +58,10 @@ class Neuron:
         return self.id
     
     def get_coordinates(self):
-        return (self.x,self.y)
+        return (self.x, self.y)
     
     def get_type(self):
         return self.type
-
-    # should maybe be divided into "inward" and "outward" synapses
-    def get_synapses(self):
-        return self.synapses
 
     # TODO import calc.py and use its formula
 
@@ -119,6 +113,7 @@ class Network:
         
         # TODO Distribute inhibitory neurons among excitatory ones (“within limits of excitatory”)
         # TODO Comply to guidelines regarding excitatory / inhibitory spacing (see discord screenshot)
+        """
         for i in range(num_neurons):
             x = np.random.randint(-100, 100)
             y = np.random.randint(-100, 100)
@@ -130,6 +125,7 @@ class Network:
                 self.excitatory.append(_temp)
             else:
                 self.inhibitory.append(_temp)
+        """
 
         # Extremes of x and y ([x_min, x_max, y_min, y_max])
         extremes = [100, -100, 100, -100]
@@ -138,19 +134,25 @@ class Network:
             x = np.random.randint(-100, 100)
             y = np.random.randint(-100, 100)
             if x < extremes[0]:
-                x_min = x
+                extremes[0] = x
             if x > extremes[1]:
-                x_max = x
+                extremes[1] = x
             if y < extremes[2]:
-                y_min = y
+                extremes[2] = y
             if y > extremes[3]:
-                y_max = y
-            self.neurons.append(Neuron(x, y, i, NeuronType.EXCITATORY))
+                extremes[3] = y
+            neuron: Neuron = Neuron(x, y, i, NeuronType.EXCITATORY)
+            self.neurons.append(neuron)
+            self.excitatory.append(neuron)
         
+        print(extremes)
         # Distributing inhibitory neurons
         for i in range(num_ex, num_neurons):
-            x = np.random.randint(extremes[1], extremes[0]) # was the other way around (first was [0] and second [1]) -> crashes because first entry has to be lower than the second
-            y = np.random.randint(extremes[3], extremes[2]) # was the same here
+            x = np.random.randint(extremes[0], extremes[1]) # was the other way around (first was [0] and second [1]) -> crashes because first entry has to be lower than the second
+            y = np.random.randint(extremes[2], extremes[3]) # was the same here
+            neuron: Neuron = Neuron(x, y, i, NeuronType.INHIBITORY)
+            self.neurons.append(neuron)
+            self.inhibitory.append(neuron)
         
 
         # Probability Kernel
@@ -174,11 +176,24 @@ class Network:
     def get_synapses(self):
         return self.synapses
     
+    def get_outgoing_synapses(self, neuron_index: int):
+        return self.synapses[:, neuron_index]
+    
+    def get_incoming_synapses(self, neuron_index: int):
+        return self.synapses[neuron_index, :]
+    
+    def is_inhibitory(self, neuron_index: int):
+        return self.neurons[neuron_index].get_type() == NeuronType.INHIBITORY
+
+    def is_excitatory(self, neuron_index: int):
+        return self.neurons[neuron_index].get_type() == NeuronType.EXCITATORY
+    
     # should maybe only add 1 to the current value?
     def update_synapses(self, x: int, y: int, value):
         self.synapses[x, y] += value
 
-    # 
+    
+
     def reset_synapse(self, x: int, y: int):
         self.synapses[x, y] = 0
         
@@ -187,3 +202,8 @@ class Network:
         
     def structural_plasticity_step(self):
         calc.structural_plasticity_step(self)
+    
+    def execute_deletions(self, deletions):
+
+        print("Executing deletions:")
+        # TODO implement deletion of synapses based on the deltas (randomly select synapses to delete)
