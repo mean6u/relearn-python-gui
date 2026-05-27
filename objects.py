@@ -13,19 +13,17 @@ class Neuron:
         self.id = id
         self.type = neuron_type
 
-        
         # Position of neuron
         self.x = x
         self.y = y
         
-        #TODO add explanation 
         #Izhikevich Modell (a=0.1, b=0.2, c=-65.0, d=2.0)
-        self.v = -65.0
-        self.u = 0.0
+        self.v = -65.0  # Membrane potential
+        self.u = 0.0    # Membrane recovery variable
 
-        self.calcium_level = 0
-        self.tau_ca = 10000.0
-        self.beta = 0.001
+        self.calcium_level = 0  # Calcium level of neuron
+        self.tau_ca = 10000.0   # Decay time of calcium level (decreases exponentially to zero)
+        self.beta = 0.001       # Increase in calcium every time the neuron fires
 
         #Ein exzitatorisches Neuron kann nur exzitatorische Stecker bilden, 
         #ein inhibitorisches Neuron nur inhibitorische Stecker.
@@ -37,9 +35,9 @@ class Neuron:
         #um erregende Signale von anderen Neuronen zu empfangen.
 
         #Das sind die Zähler für die absolute Gesamtmenge an synaptischen Elementen, die dieses Neuron aktuell besitzt.
-        self.A = 0.0    # Axonale Elemente 
-        self.D_ex = 0.0 # Exzitatorische dendritische Elemente
-        self.D_in = 0.0 # Inhibitorische dendritische Elemente
+        self.A = 0.0    # Axonal elements
+        self.D_ex = 0.0 # Dendritic elements (excitatory)
+        self.D_in = 0.0 # Dendritic elements (inhibitory)
         
 
         # Vakanzen (Ungebundene Elemente, die für neue Synapsen bereitstehen)
@@ -47,7 +45,12 @@ class Neuron:
         self.vac_D_ex = 0   # Dendritic elements (excitatory)
         self.vac_D_in = 0   # Dendritic elements (inhibitory)
 
-        # Akkumulatoren für deterministischen Verfall (Equ. 5)
+        # Akkumulatoren für deterministischen Verfall (Paper Eq. 5)
+        # Nu (“v”): Growth factor (is set to 0.001 in the paper)
+        # z_i: Number of synaptic elements of a neuron (not explicitly computed)
+        # dz_i / dt: Growth rate of synaptic elements (calculated by multiplying nu with term that depends on calcium level)
+
+        # TODO understand + comment (vacant synaptic elements decay over time; because we can only remove entire synaptic elements?)
         self.decay_acc_A = 0.0
         self.decay_acc_D_ex = 0.0
         self.decay_acc_D_in = 0.0
@@ -114,6 +117,17 @@ class Network:
         # TODO Distribute inhibitory neurons among excitatory ones (“within limits of excitatory”)
         # TODO Comply to guidelines regarding excitatory / inhibitory spacing (see discord screenshot)
         """
+        From the paper: Excitatory neurons were placed with a spatial variance of on a 20×16 grid with
+        a distance between two grid points of . More precisely, the x,y-coordinates of each neuron were
+        derived from a normal distribution (with the chosen spatial variance as standard deviation) that
+        was centered at an individual grid point. For the 80 inhibitory neurons we defined a second 10×8
+        grid positioned in such a way that the inhibitory neurons become equally distributed among the
+        excitatory ones; the precise x,y coordinates were determined as was done for the excitatory neurons.
+        Given that neurons in the adult cortex of rodents [54] are capable of rewiring their axonal branches
+        over a couple of hundred micrometers, the expected distance between neurons of in the model is a
+        plausible choice.
+        """
+        """
         for i in range(num_neurons):
             x = np.random.randint(-100, 100)
             y = np.random.randint(-100, 100)
@@ -145,11 +159,10 @@ class Network:
             self.neurons.append(neuron)
             self.excitatory.append(neuron)
         
-        print(extremes)
         # Distributing inhibitory neurons
         for i in range(num_ex, num_neurons):
-            x = np.random.randint(extremes[0], extremes[1]) # was the other way around (first was [0] and second [1]) -> crashes because first entry has to be lower than the second
-            y = np.random.randint(extremes[2], extremes[3]) # was the same here
+            x = np.random.randint(extremes[0] + (extremes[1]-extremes[0])/4, extremes[1] - (extremes[1]-extremes[0])/4)
+            y = np.random.randint(extremes[2] + (extremes[3]-extremes[2])/4, extremes[3] - (extremes[3]-extremes[2])/4)
             neuron: Neuron = Neuron(x, y, i, NeuronType.INHIBITORY)
             self.neurons.append(neuron)
             self.inhibitory.append(neuron)
