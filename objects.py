@@ -43,9 +43,9 @@ class Neuron:
         
 
         # Vakanzen (Ungebundene Elemente, die für neue Synapsen bereitstehen)
-        self.vac_A = 0
-        self.vac_D_ex = 0
-        self.vac_D_in = 0
+        self.vac_A = 0      # Axonal elements
+        self.vac_D_ex = 0   # Dendritic elements (excitatory)
+        self.vac_D_in = 0   # Dendritic elements (inhibitory)
 
         # Akkumulatoren für deterministischen Verfall (Equ. 5)
         self.decay_acc_A = 0.0
