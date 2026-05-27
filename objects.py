@@ -113,6 +113,7 @@ class Network:
         
         # TODO Distribute inhibitory neurons among excitatory ones (“within limits of excitatory”)
         # TODO Comply to guidelines regarding excitatory / inhibitory spacing (see discord screenshot)
+        """
         for i in range(num_neurons):
             x = np.random.randint(-100, 100)
             y = np.random.randint(-100, 100)
@@ -124,6 +125,7 @@ class Network:
                 self.excitatory.append(_temp)
             else:
                 self.inhibitory.append(_temp)
+        """
 
         # Extremes of x and y ([x_min, x_max, y_min, y_max])
         extremes = [100, -100, 100, -100]
@@ -132,19 +134,21 @@ class Network:
             x = np.random.randint(-100, 100)
             y = np.random.randint(-100, 100)
             if x < extremes[0]:
-                x_min = x
+                extremes[0] = x
             if x > extremes[1]:
-                x_max = x
+                extremes[1] = x
             if y < extremes[2]:
-                y_min = y
+                extremes[2] = y
             if y > extremes[3]:
-                y_max = y
+                extremes[3] = y
             self.neurons.append(Neuron(x, y, i, NeuronType.EXCITATORY))
         
+        print(extremes)
         # Distributing inhibitory neurons
         for i in range(num_ex, num_neurons):
-            x = np.random.randint(extremes[1], extremes[0]) # was the other way around (first was [0] and second [1]) -> crashes because first entry has to be lower than the second
-            y = np.random.randint(extremes[3], extremes[2]) # was the same here
+            x = np.random.randint(extremes[0], extremes[1]) # was the other way around (first was [0] and second [1]) -> crashes because first entry has to be lower than the second
+            y = np.random.randint(extremes[2], extremes[3]) # was the same here
+            self.neurons.append(Neuron(x, y, i, NeuronType.INHIBITORY))
         
 
         # Probability Kernel
