@@ -221,8 +221,8 @@ class simulation(QMainWindow):
         pos = [(n.x, n.y) for n in self.neurons]
         
         TYPE_CONFIG = {
-            NeuronType.EXCITATORY: {"symbol": "o", "brush": (46, 204, 113)},
-            NeuronType.INHIBITORY: {"symbol": "s", "brush": (231, 76, 60)},
+            NeuronType.EXCITATORY: {"symbol": "o", "brush": (46, 0, 213)},
+            NeuronType.INHIBITORY: {"symbol": "o", "brush": (231, 76, 60)},
         }
 
         symbols = [TYPE_CONFIG[NeuronType(int(getattr(n.type, 'value', n.type)))]["symbol"] for n in self.neurons]
