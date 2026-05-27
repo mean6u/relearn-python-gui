@@ -3,9 +3,9 @@ import pyqtgraph as pg
 import numpy as np
 from PyQt6.QtWidgets import QApplication, QLineEdit, QMainWindow, QPushButton, QVBoxLayout, QHBoxLayout, QWidget, QSlider, QLabel, QStyleFactory
 from PyQt6.QtCore import Qt, QTimer
-from PyQt6.QtGui import QPalette, QColor, QIcon, QIntValidator
+from PyQt6.QtGui import QPalette, QColor, QIcon, QIntValidator, QPainterPath
 from currentgraph import currentgraph
-from objects import NeuronType 
+from objects import NeuronType, Neuron
 
 # global variable for dark mode
 dark_mode = True
@@ -161,6 +161,8 @@ class simulation(QMainWindow):
     def __init__(self, is_dark_mode: bool, neuron_count: int, exc_count: int):
         super().__init__()
         self.graph = currentgraph(neuron_count, exc_count/100, (100-exc_count)/100)
+        self.graph.neurons[0].set_vac_A()
+        print(self.graph.neurons[0].get_vac_A())
         # slightly reduces performance but prettier
         pg.setConfigOptions(antialias=True)
         
@@ -192,9 +194,15 @@ class simulation(QMainWindow):
         self.view = self.plot_widget.addViewBox()
         self.view.setAspectLocked(True)
 
+        # Neuron Layer
         self.network_graph = pg.GraphItem()
         self.view.addItem(self.network_graph)
 
+        # Synaptic Elements Layer
+        self.synaptic_elements = pg.ScatterPlotItem()
+        self.view.addItem(self.synaptic_elements)
+
+        # including time in simulation
         self.timer = QTimer()
         self.timer.timeout.connect(self.simulate_time_stamp)
         self.timer.start(100)
@@ -221,7 +229,7 @@ class simulation(QMainWindow):
     # Spawn new neurons based on input values in the graph
     def spawn_neurons(self):
         # Changed to tuple (replaced brackets [])
-        pos = [(n.x, n.y) for n in self.neurons]
+        pos = np.array([[n.x, n.y] for n in self.neurons])
         
         TYPE_CONFIG = {
             NeuronType.EXCITATORY: {"symbol": "o", "brush": (46, 0, 213)},
@@ -231,7 +239,80 @@ class simulation(QMainWindow):
         symbols = [TYPE_CONFIG[NeuronType(int(getattr(n.type, 'value', n.type)))]["symbol"] for n in self.neurons]
         colors  = [TYPE_CONFIG[NeuronType(int(getattr(n.type, 'value', n.type)))]["brush"] for n in self.neurons]
 
-        self.network_graph.setData(pos=pos, adj=None, pen=pg.mkPen(color=(150, 150, 150), width=2), size=14, symbol=symbols, symbolBrush=colors, symbolPen=None)
+        spots = []
+
+        for i, n in enumerate(self.neurons):
+            synaptic_symbols = self.create_paths(n)
+
+            spots.append({
+                'pos': pos[i],
+                'symbol': synaptic_symbols,
+                'pen': pg.mkPen(color='w', width=1.5),
+                'brush': pg.mkBrush(None),
+                'size': 30
+            })
+
+        self.synaptic_elements.setData(spots=spots)
+        self.network_graph.setData(pos=pos, pen=pg.mkPen(color=(150, 150, 150), width=2), size=20, symbol=symbols, symbolBrush=colors, symbolPen=None)
+        
+
+    def create_paths(self, neuron: Neuron, radius=10):
+        path = QPainterPath()
+        
+        path.moveTo(-20, -20)
+        path.lineTo(-20.01, -20.01)
+        path.moveTo(20, 20)
+        path.lineTo(20.01, 20.01)
+
+        axon_count = int(neuron.vac_A)
+        dendr_ex_count = int(neuron.vac_D_ex)
+        dendr_in_count = int(neuron.vac_D_in)
+
+        total_count = axon_count + dendr_ex_count + dendr_in_count
+
+        if total_count == 0:
+            return path
+        
+        angles = np.linspace(0, 360, total_count, endpoint=False)
+
+        for i, angle in enumerate(angles):
+            rad_angle = np.radians(angle)
+
+            x_start = np.cos(rad_angle) * radius
+            y_start = np.sin(rad_angle) * radius
+
+            if i < axon_count:
+                length = 8
+                x_end = np.cos(rad_angle) * (radius + length)
+                y_end = np.sin(rad_angle) * (radius + length)
+                path.moveTo(x_start, y_start)
+                path.lineTo(x_end, y_end)
+                
+                dist = 3
+                path.lineTo(x_end - np.cos(rad_angle+0.5)*dist, y_end - np.sin(rad_angle+0.5)*dist)
+                path.moveTo(x_end, y_end)
+                path.lineTo(x_end - np.cos(rad_angle-0.5)*dist, y_end - np.sin(rad_angle-0.5)*dist)
+            
+            elif i < (axon_count + dendr_ex_count):
+                length = 5
+                x_end = np.cos(rad_angle) * (radius + length)
+                y_end = np.sin(rad_angle) * (radius + length)
+                path.moveTo(x_start, y_start)
+                path.lineTo(x_end, y_end)    
+            
+            else:
+                length = 4
+                x_end = np.cos(rad_angle) * (radius + length)
+                y_end = np.sin(rad_angle) * (radius + length)
+                path.moveTo(x_start, y_start)
+                path.lineTo(x_end, y_end)
+                # Kleiner Querstrich (T-Form)
+                dist = 2
+                path.moveTo(x_end - np.sin(rad_angle)*dist, y_end + np.cos(rad_angle)*dist)
+                path.lineTo(x_end + np.sin(rad_angle)*dist, y_end - np.cos(rad_angle)*dist)
+        return path
+
+        
 
     # TODO Implement firing visualization
     def update_firing_neurons(self):

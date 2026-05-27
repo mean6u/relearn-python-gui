@@ -54,6 +54,12 @@ class Neuron:
 
         # TODO gebundene Elemente nur in Matrix (self.C in Network)?
 
+    def set_vac_A(self):
+        self.vac_A = 2
+
+    def get_vac_A(self):
+        return self.vac_A
+
     def get_id(self):
         return self.id
     
@@ -145,7 +151,7 @@ class Network:
             self.neurons.append(neuron)
             self.excitatory.append(neuron)
         
-        print(extremes)
+        #print(extremes)
         # Distributing inhibitory neurons
         for i in range(num_ex, num_neurons):
             x = np.random.randint(extremes[0], extremes[1]) # was the other way around (first was [0] and second [1]) -> crashes because first entry has to be lower than the second
