@@ -1,6 +1,9 @@
 import math
+import random
 from typing import Tuple, List
 import numpy as np
+
+from objects import NeuronType
 
 
 def step_electrical(neuron, I: float, dt:float = 1.0) -> bool:
@@ -136,6 +139,101 @@ def structural_plasticity_step(network):
 
     # den tatsächlichen Abbau im Netzwerk durchführen
     network.execute_deletions(deletions)
+
+    all_vacA = []
+    all_D_ex = []
+    all_D_in = []
+    for i, neuron in enumerate(network.neurons):
+        #Herausfinden, wie viele Elemente aktuell gebunden sind
+        bound_A = np.sum(network.get_outgoing_synapses(i)) # Ausgehende Synapsen (Spalte i)
+        bound_D_ex = np.sum(int(network.is_excitatory(i)) * network.get_incoming_synapses(i)) # Eingehend von exzitatorischen
+        bound_D_in = np.sum(int(network.is_inhibitory(i)) * network.get_incoming_synapses(i)) # Eingehend von inhibitorischen
+
+            # Das Neuron aktualisieren
+        deltas = update_structural_elements(neuron, bound_A, bound_D_ex, bound_D_in)
+            
+            #Abbau-Aufträge merken
+        if any(val > 0 for val in deltas):
+            deletions.append((i, deltas))
         
+
+# Calculates synaptic connections among the neurons based on free synaptic elements and the
+# euclidean distance of the respective neurons
+def assign_vacant_elements(network) -> list:
+    """
+    Takes a network and returns a list of tuples. A tuple for a synapse from neuron a to neuron b is (a, b).
+    """
+    # Storing the free synaptic elements for each neuron (index i is the respective number of free element for the i-th neuron)
+    free_a_ex = [neuron.vac_A if neuron.is_excitatory() else 0 
+                 for neuron in network.neurons]
+    free_a_in = [neuron.vac_A if neuron.is_inhibitory() else 0
+                 for neuron in network.neurons]
+    free_d_ex = [neuron.vac_D_ex for neuron in network.neurons]
+    free_d_in = [neuron.vac_D_in for neuron in network.neurons]
+
+    # Storing the total number of axonal / dendritic excitatory / inhibitory elements in a dictionary (four elements)
+    # TODO Make more efficient
+    sums = {"axonal excitatory": sum(free_a_ex), "axonal inhibitory": sum(free_a_in) , "dendritic excitatory": sum(free_d_ex), "dendritic inhibitory": sum(free_d_in)}
     
-        
+    # Creating list of assigned elements: ([outgoing_neuron], [incoming_neuron])
+    assigned_excitatory = []
+    assigned_inhibitory = []
+
+    # Assigning random elements
+    # Assigning excitatory elements (axonal to dendritic)
+    while sums["axonal excitatory"] != 0 and sums["dendritic excitatory"] != 0:
+        # Find random, vacant, excitatory axonal element and the respective neuron
+        chosen_axonal_element: int = random.randint(0, sums["axonal excitatory"] - 1)
+        for neuron_index in range(len(free_a_ex)):
+            chosen_axonal_element -= free_a_ex[neuron_index]
+            if chosen_axonal_element < 1:
+                # We got the neuron index (stored in axonal_neuron_index)
+                axonal_neuron_index = neuron_index
+                break
+        # Find random, vacant, excitatory dendritic element and the respective neuron
+        chosen_dendritic_element: int = random.randint(0, sums["dendritic excitatory"] - 1)
+        for neuron_index in range(len(free_d_ex)):
+            chosen_dendritic_element -= free_d_ex[neuron_index]
+            if chosen_dendritic_element < 1:
+                # We got the neuron index (stored in dendritic_neuron_index)
+                dendritic_neuron_index = neuron_index
+                break
+        # Adding connection to list
+        assigned_excitatory.append((axonal_neuron_index, dendritic_neuron_index))
+        # Adjusting values
+        free_a_ex[axonal_neuron_index] -= 1
+        free_d_ex[dendritic_neuron_index] -= 1
+        sums["axonal excitatory"] -= 1
+        sums["dendritic excitatory"] -= 1
+ 
+    # Assigning inhibitory elements (axonal to dendritic)
+    while sums["axonal inhibitory"] != 0 and sums["dendritic inhibitory"] != 0:
+        # Find random, vacant, inhibitory axonal element and the respective neuron
+        chosen_axonal_element: int = random.randint(0, sums["axonal inhibitory"] - 1)
+        for neuron_index in range(len(free_a_ex)):
+            chosen_axonal_element -= free_a_ex[neuron_index]
+            if chosen_axonal_element < 1:
+                # We got the neuron index (stored in axonal_neuron_index)
+                axonal_neuron_index = neuron_index
+                break
+        # Find random, vacant, inhibitory dendritic element and the respective neuron
+        chosen_dendritic_element: int = random.randint(0, sums["dendritic inhibitory"] - 1)
+        for neuron_index in range(len(free_d_ex)):
+            chosen_dendritic_element -= free_d_ex[neuron_index]
+            if chosen_dendritic_element < 1:
+                # We got the neuron index (stored in dendritic_neuron_index)
+                dendritic_neuron_index = neuron_index
+                break
+        # Adding connection to list
+        assigned_inhibitory.append((axonal_neuron_index, dendritic_neuron_index))
+        # Adjusting values
+        free_a_ex[axonal_neuron_index] -= 1
+        free_d_ex[dendritic_neuron_index] -= 1
+        sums["axonal inhibitory"] -= 1
+        sums["dendritic inhibitory"] -= 1
+
+def check_assignment(assignments) -> list:
+    """
+    Takes a list of potential connections and returns a list of synapses to be established based on the euclidean distance.
+    """
+    pass

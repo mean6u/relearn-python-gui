@@ -80,6 +80,12 @@ class Neuron:
     def update_structural_elements(self, bound_A: int, bound_D_ex: int, bound_D_in: int, dt: float = 100.0):
         return calc.update_structural_elements(self, bound_A, bound_D_ex, bound_D_in, dt)
     
+    def is_excitatory(self):
+        return self.type == NeuronType.EXCITATORY
+    
+    def is_inhibitory(self):
+        return self.type == NeuronType.INHIBITORY
+    
         
 
 class Synapse:
@@ -196,10 +202,10 @@ class Network:
         return self.synapses[neuron_index, :]
     
     def is_inhibitory(self, neuron_index: int):
-        return self.neurons[neuron_index].get_type() == NeuronType.INHIBITORY
+        return self.neurons[neuron_index].is_inhibitory()
 
     def is_excitatory(self, neuron_index: int):
-        return self.neurons[neuron_index].get_type() == NeuronType.EXCITATORY
+        return self.neurons[neuron_index].is_excitatory()
     
     # should maybe only add 1 to the current value?
     def update_synapses(self, x: int, y: int, value):
@@ -220,3 +226,4 @@ class Network:
 
         print("Executing deletions:")
         # TODO implement deletion of synapses based on the deltas (randomly select synapses to delete)
+        
