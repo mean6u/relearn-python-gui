@@ -141,14 +141,18 @@ class Network:
                 extremes[2] = y
             if y > extremes[3]:
                 extremes[3] = y
-            self.neurons.append(Neuron(x, y, i, NeuronType.EXCITATORY))
+            neuron: Neuron = Neuron(x, y, i, NeuronType.EXCITATORY)
+            self.neurons.append(neuron)
+            self.excitatory.append(neuron)
         
         print(extremes)
         # Distributing inhibitory neurons
         for i in range(num_ex, num_neurons):
             x = np.random.randint(extremes[0], extremes[1]) # was the other way around (first was [0] and second [1]) -> crashes because first entry has to be lower than the second
             y = np.random.randint(extremes[2], extremes[3]) # was the same here
-            self.neurons.append(Neuron(x, y, i, NeuronType.INHIBITORY))
+            neuron: Neuron = Neuron(x, y, i, NeuronType.INHIBITORY)
+            self.neurons.append(neuron)
+            self.inhibitory.append(neuron)
         
 
         # Probability Kernel
