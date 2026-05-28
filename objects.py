@@ -54,12 +54,6 @@ class Neuron:
 
         # TODO gebundene Elemente nur in Matrix (self.C in Network)?
 
-    def set_vac_A(self):
-        self.vac_A = 2
-
-    def get_vac_A(self):
-        return self.vac_A
-
     def get_id(self):
         return self.id
     

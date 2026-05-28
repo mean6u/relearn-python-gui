@@ -160,10 +160,25 @@ class guilauncher(QMainWindow):
 class simulation(QMainWindow):
     def __init__(self, is_dark_mode: bool, neuron_count: int, exc_count: int):
         super().__init__()
+
+
+        # Initialising currentgraph
+        
         self.graph = currentgraph(neuron_count, exc_count/100, (100-exc_count)/100)
-        self.graph.neurons[0].set_vac_A()
-        print(self.graph.neurons[0].get_vac_A())
-        # slightly reduces performance but prettier
+        self.neurons = self.graph.neurons
+
+
+        # Test
+        for neuron in self.neurons:
+            neuron.vac_A = 4
+            neuron.vac_D_ex = 6
+            neuron.vac_D_in = 6
+        
+        #print(self.graph.neurons[0].vac_A)
+
+
+        # Configs
+        
         pg.setConfigOptions(antialias=True)
         
         self.setWindowTitle("RELeARN - Structural Plasiticity Simulation")
@@ -171,53 +186,79 @@ class simulation(QMainWindow):
 
         self.setWindowIcon(QIcon('plasticity.jpg'))
 
-        self.neurons = self.graph.neurons
 
+        # Central Widget
+        
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
         layout = QVBoxLayout(central_widget)
 
-        # earlier used simpler PlotWidget
-        #self.plot_widget = pg.PlotWidget()
+
+        # Plot
 
         self.plot_widget = pg.GraphicsLayoutWidget()
+
         if is_dark_mode:
             self.plot_widget.setBackground("#000000")
         else:
             self.plot_widget.setBackground("#ffffff")
-        
-        #self.plot_widget.showAxis("left", False) # used with PlotWidget
-        #self.plot_widget.showAxis("bottom", False) # used with PlotWidget
         
         layout.addWidget(self.plot_widget)
 
         self.view = self.plot_widget.addViewBox()
         self.view.setAspectLocked(True)
 
+
         # Neuron Layer
+        
         self.network_graph = pg.GraphItem()
+
         self.view.addItem(self.network_graph)
 
-        # Synaptic Elements Layer
-        self.synaptic_elements = pg.ScatterPlotItem()
-        self.view.addItem(self.synaptic_elements)
 
-        # including time in simulation
+        # Synaptic Elements Layer
+
+        # Excitatory Dendritic Spines
+        self.ex_spines = pg.ScatterPlotItem(size=6, symbol='s', brush=(46, 0, 213), pen=None)
+
+        # Inhibitory Dendritic Spines
+        self.in_spines = pg.ScatterPlotItem(size=6, symbol='s', brush=(231, 76, 60), pen=None)
+
+        # Axonal Boutons
+        self.axons = pg.ScatterPlotItem(size=8, symbol='t', brush=(255, 255, 255), pen=None)
+
+        self.view.addItem(self.ex_spines)
+        self.view.addItem(self.in_spines)
+        self.view.addItem(self.axons)
+
+
+        # Initial Render
+
+        self.spawn_neurons()
+
+
+        # Timer
+
         self.timer = QTimer()
         self.timer.timeout.connect(self.simulate_time_stamp)
         self.timer.start(100)
 
-        self.timer_pause_btn = QPushButton("Pause Simulation")
+        self.timer_pause_btn = QPushButton("⏸")
         self.timer_pause_btn.clicked.connect(self.toggle_simulation)
         self.timer_pause_btn.setStyleSheet("background-color: green; color: black; font: bold 14px;")
+
         layout.addWidget(self.timer_pause_btn)
 
+
+
+        # More Buttons
+                
         button_layout = QHBoxLayout()
-        self.spawn_neurons()
-        self.random_button = QPushButton("Return to Launcher")
-        self.random_button.setStyleSheet("background-color: yellow; color: black; font: bold 14px;")
-        self.random_button.clicked.connect(self.return_to_launcher)
-        button_layout.addWidget(self.random_button)
+        
+        self.return_button = QPushButton("Return to Launcher")
+        self.return_button.setStyleSheet("background-color: yellow; color: black; font: bold 14px;")
+        self.return_button.clicked.connect(self.return_to_launcher)
+        button_layout.addWidget(self.return_button)
 
         self.exit_button = QPushButton("Exit")
         self.exit_button.setStyleSheet("background-color: red; color: black; font: bold 14px;")
@@ -226,36 +267,171 @@ class simulation(QMainWindow):
 
         layout.addLayout(button_layout)
 
-    # Spawn new neurons based on input values in the graph
+
+
+    # Spawn Neurons (based on User Input)
+
     def spawn_neurons(self):
-        # Changed to tuple (replaced brackets [])
+
+        # Positions of the Neurons
+        
         pos = np.array([[n.x, n.y] for n in self.neurons])
         
+
+        # Types of the Neurons
+
         TYPE_CONFIG = {
             NeuronType.EXCITATORY: {"symbol": "o", "brush": (46, 0, 213)},
             NeuronType.INHIBITORY: {"symbol": "o", "brush": (231, 76, 60)},
         }
 
+
+        # Plotting Data
+
         symbols = [TYPE_CONFIG[NeuronType(int(getattr(n.type, 'value', n.type)))]["symbol"] for n in self.neurons]
         colors  = [TYPE_CONFIG[NeuronType(int(getattr(n.type, 'value', n.type)))]["brush"] for n in self.neurons]
 
-        spots = []
 
-        for i, n in enumerate(self.neurons):
-            synaptic_symbols = self.create_paths(n)
+        # Plotting
 
-            spots.append({
-                'pos': pos[i],
-                'symbol': synaptic_symbols,
-                'pen': pg.mkPen(color='w', width=1.5),
-                'brush': pg.mkBrush(None),
-                'size': 30
-            })
+        self.network_graph.setData(pos=pos, pen=pg.mkPen(color=(150, 150, 150), width=2), size=25, symbol=symbols, symbolBrush=colors, symbolPen=None)
 
-        self.synaptic_elements.setData(spots=spots)
-        self.network_graph.setData(pos=pos, pen=pg.mkPen(color=(150, 150, 150), width=2), size=20, symbol=symbols, symbolBrush=colors, symbolPen=None)
+
+        self.update_synaptic_elements()
         
 
+    def generate_synaptic_positions(self, neuron, axon_count, exc_count, inh_count):
+        ax_x = []
+        ax_y = []
+
+        exc_x = []
+        exc_y = []
+
+        inh_x = []
+        inh_y = []
+
+        total_count = (axon_count + exc_count + inh_count)
+
+        remaining_ax = axon_count
+        remaining_exc = exc_count
+        remaining_inh = inh_count
+
+
+        if total_count == 0:
+            return (ax_x, ax_y,
+                    exc_x, exc_y,
+                    inh_x, inh_y)
+
+
+        # Random Rotation Offset
+        offset = np.random.uniform(0, 2 * np.pi)
+
+
+        # Angles for Synaptic Elements of one Neuron
+        angles = np.linspace(offset, offset + 2*np.pi, total_count, endpoint=False)
+
+        axon_angles = []
+
+        exc_angles = []
+
+        inh_angles = []
+
+        # Split Angles between Synapse Types
+
+        i = 0
+
+        while i < total_count:
+            if (remaining_ax > 0):
+                axon_angles.append(angles[i])
+                i += 1
+                remaining_ax -= 1
+
+            if (i < total_count and remaining_exc > 0):
+                exc_angles.append(angles[i])
+                i += 1
+                remaining_exc -= 1
+            
+            if (i < total_count and remaining_inh > 0):
+                inh_angles.append(angles[i])
+                i += 1
+                remaining_inh -= 1
+
+        #axon_angles = angles[:axon_count]
+
+        #exc_angles = angles[axon_count:axon_count + exc_count]
+
+        #inh_angles = angles[axon_count + exc_count:]
+
+
+        radius = 6
+
+        for angle in axon_angles:
+
+            x = neuron.x + np.cos(angle) * radius
+            y = neuron.y + np.sin(angle) * radius
+
+            ax_x.append(x)
+            ax_y.append(y)
+
+
+        for angle in exc_angles:
+
+            x = neuron.x + np.cos(angle) * radius
+            y = neuron.y + np.sin(angle) * radius
+
+            exc_x.append(x)
+            exc_y.append(y)
+
+
+        for angle in inh_angles:
+
+            x = neuron.x + np.cos(angle) * radius
+            y = neuron.y + np.sin(angle) * radius
+
+            inh_x.append(x)
+            inh_y.append(y)
+
+        return (ax_x, ax_y,
+                exc_x, exc_y,
+                inh_x, inh_y)
+
+
+    def update_synaptic_elements(self):
+        all_ax_x = []
+        all_ax_y = []
+        
+        all_exc_x = []
+        all_exc_y = []
+
+        all_inh_x = []
+        all_inh_y = []
+
+        for neuron in self.neurons:
+            axon_count = int(neuron.vac_A)
+            exc_count = int(neuron.vac_D_ex)
+            inh_count = int(neuron.vac_D_in)
+
+            (ax_x, ax_y,
+             exc_x, exc_y,
+             inh_x, inh_y) = self.generate_synaptic_positions(neuron, axon_count, exc_count, inh_count)
+
+            all_ax_x.extend(ax_x)
+            all_ax_y.extend(ax_y)
+
+            all_exc_x.extend(exc_x)
+            all_exc_y.extend(exc_y)
+
+            all_inh_x.extend(inh_x)
+            all_inh_y.extend(inh_y)
+
+        self.axons.setData(x = all_ax_x, y = all_ax_y)
+
+        self.ex_spines.setData(x = all_exc_x, y = all_exc_y)
+
+        self.in_spines.setData(x = all_inh_x, y = all_inh_y)
+
+
+    """
     def create_paths(self, neuron: Neuron, radius=10):
         path = QPainterPath()
         
@@ -312,7 +488,7 @@ class simulation(QMainWindow):
                 path.moveTo(x_end - np.sin(rad_angle)*dist, y_end + np.cos(rad_angle)*dist)
                 path.lineTo(x_end + np.sin(rad_angle)*dist, y_end - np.cos(rad_angle)*dist)
         return path
-
+    """
         
 
     # TODO Implement firing visualization
@@ -325,10 +501,10 @@ class simulation(QMainWindow):
     def toggle_simulation(self):
         if self.timer.isActive():
             self.timer.stop()
-            self.timer_pause_btn.setText("Resume Simulation")
+            self.timer_pause_btn.setText("►")
         else:
             self.timer.start()
-            self.timer_pause_btn.setText("Pause Simulation")
+            self.timer_pause_btn.setText("⏸")
 
     def return_to_launcher(self):
         self.launcher = guilauncher()
