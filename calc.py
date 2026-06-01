@@ -3,7 +3,7 @@ import random
 from typing import Tuple, List
 import numpy as np
 
-from objects import NeuronType
+# from objects import NeuronType, Neuron
 
 
 def step_electrical(neuron, I: float, dt:float = 1.0) -> bool:
@@ -40,7 +40,7 @@ def step_calcium(neuron, dt: float = 1.0):
     neuron.calcium_level += dCa_dt*dt
 
 def calculate_growth_rate(neuron, eta: float, epsilon: float = 0.7, v: float = 0.0001) -> float:
-    """The growth rate of synaptic elements is given by the Gaussian function in Eq. 4, where $\eta_z$ is the optimal calcium level for growth and $\epsilon_z$ determines the width of the Gaussian curve."""
+    """The growth rate of synaptic elements is given by the Gaussian function in Eq. 4, where $eta_z$ is the optimal calcium level for growth and $epsilon_z$ determines the width of the Gaussian curve."""
     xi_z = (eta + epsilon)/2
     zeta_z = (eta - epsilon) / (2 * np.sqrt(-np.log(0.5)))
 
@@ -108,6 +108,11 @@ def update_structural_elements(neuron, bound_A: int, bound_D_ex: int, bound_D_in
     
     return delta_A, delta_D_ex, delta_D_in
 
+# TODO change all occurrences of sigma to 5.0 * 150 * 10^-6? Because it's micrometers
+def calculate_kernel_value(neuron_out, neuron_in, sigma: float = 5.0 * 150.0):
+    dist_sq = (neuron_out.x - neuron_in.x)**2 + (neuron_out.y - neuron_in.y)**2
+    return math.exp(-dist_sq / sigma**2)
+
 
 def calculate_distance_kernel(network, sigma: float = 5.0 * 150.0):
     """Equ 9"""
@@ -116,8 +121,9 @@ def calculate_distance_kernel(network, sigma: float = 5.0 * 150.0):
         for j in range(num_neurons):
             if i == j:
                 continue
-            dist_sq = (network.neurons[i].x - network.neurons[j].x)**2 + (network.neurons[i].y - network.neurons[j].y)**2
-            network.K[i, j] = math.exp(-dist_sq / sigma**2)
+            # dist_sq = (network.neurons[i].x - network.neurons[j].x)**2 + (network.neurons[i].y - network.neurons[j].y)**2
+            # network.K[i, j] = math.exp(-dist_sq / sigma**2)
+            network.K[i, j] = calculate_kernel_value(network.neurons[i], network.neurons[j], sigma)
 
 
 def structural_plasticity_step(network):
@@ -236,4 +242,9 @@ def check_assignment(assignments) -> list:
     """
     Takes a list of potential connections and returns a list of synapses to be established based on the euclidean distance.
     """
-    pass
+    actual_synapses: list = []
+    for neuron_pair in assignments:
+        outgoing, incoming = neuron_pair
+        if random.uniform(0, 1) < calculate_kernel_value(outgoing, incoming):
+            actual_synapses.append(neuron_pair)
+    return actual_synapses
