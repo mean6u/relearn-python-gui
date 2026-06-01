@@ -225,7 +225,7 @@ class simulation(QMainWindow):
         self.in_spines = pg.ScatterPlotItem(size=6, symbol='s', brush=(231, 76, 60), pen=None)
 
         # Axonal Boutons
-        self.axons = pg.ScatterPlotItem(size=8, symbol='t', brush=(255, 255, 255), pen=None)
+        self.axons = pg.ScatterPlotItem(size=8, symbol='t', brush=(255, 255, 0), pen=None)
 
         self.view.addItem(self.ex_spines)
         self.view.addItem(self.in_spines)
@@ -238,6 +238,17 @@ class simulation(QMainWindow):
 
 
         # Timer
+
+        self.elapsed_ms = 0 # keep track of elapsed time, linked with timer
+        self.time_overlay = QLabel("00:00.0", self.plot_widget)
+        self.time_overlay.setStyleSheet("""
+            background-color: rgba(0, 0, 0, 120);
+            color: #deff9a;
+            font-family: 'Consolas', monospace;
+            font-size: 20px;
+            font-weight: bold;
+            padding: 8px;
+        """)
 
         self.timer = QTimer()
         self.timer.timeout.connect(self.simulate_time_stamp)
@@ -267,6 +278,26 @@ class simulation(QMainWindow):
 
         layout.addLayout(button_layout)
 
+
+    def simulate_time_stamp(self):
+        
+        self.elapsed_ms += 100
+        total_seconds = self.elapsed_ms // 1000
+        minutes = total_seconds // 60
+        seconds = total_seconds % 60
+        tenth_seconds = (self.elapsed_ms % 1000) // 100
+        self.time_overlay.setText(f"{minutes:02d}:{seconds:02d}.{tenth_seconds:01d}")
+
+
+    # Toggle Pause/Resume Button for Simulation
+
+    def toggle_simulation(self):
+        if self.timer.isActive():
+            self.timer.stop()
+            self.timer_pause_btn.setText("►")
+        else:
+            self.timer.start()
+            self.timer_pause_btn.setText("⏸")
 
 
     # Spawn Neurons (based on User Input)
@@ -430,81 +461,11 @@ class simulation(QMainWindow):
 
         self.in_spines.setData(x = all_inh_x, y = all_inh_y)
 
-
-    """
-    def create_paths(self, neuron: Neuron, radius=10):
-        path = QPainterPath()
-        
-        # did not fix the issue that there are no synaptic elements displayed
-        #path.moveTo(-20, -20)
-        #path.lineTo(-20.01, -20.01)
-        #path.moveTo(20, 20)
-        #path.lineTo(20.01, 20.01)
-
-        axon_count = int(neuron.vac_A)
-        dendr_ex_count = int(neuron.vac_D_ex)
-        dendr_in_count = int(neuron.vac_D_in)
-
-        total_count = axon_count + dendr_ex_count + dendr_in_count
-
-        if total_count == 0:
-            return path
-        
-        angles = np.linspace(0, 360, total_count, endpoint=False)
-
-        for i, angle in enumerate(angles):
-            rad_angle = np.radians(angle)
-
-            x_start = np.cos(rad_angle) * radius
-            y_start = np.sin(rad_angle) * radius
-
-            if i < axon_count:
-                length = 8
-                x_end = np.cos(rad_angle) * (radius + length)
-                y_end = np.sin(rad_angle) * (radius + length)
-                path.moveTo(x_start, y_start)
-                path.lineTo(x_end, y_end)
-                
-                dist = 3
-                path.lineTo(x_end - np.cos(rad_angle+0.5)*dist, y_end - np.sin(rad_angle+0.5)*dist)
-                path.moveTo(x_end, y_end)
-                path.lineTo(x_end - np.cos(rad_angle-0.5)*dist, y_end - np.sin(rad_angle-0.5)*dist)
-            
-            elif i < (axon_count + dendr_ex_count):
-                length = 5
-                x_end = np.cos(rad_angle) * (radius + length)
-                y_end = np.sin(rad_angle) * (radius + length)
-                path.moveTo(x_start, y_start)
-                path.lineTo(x_end, y_end)    
-            
-            else:
-                length = 4
-                x_end = np.cos(rad_angle) * (radius + length)
-                y_end = np.sin(rad_angle) * (radius + length)
-                path.moveTo(x_start, y_start)
-                path.lineTo(x_end, y_end)
-                # Kleiner Querstrich (T-Form)
-                dist = 2
-                path.moveTo(x_end - np.sin(rad_angle)*dist, y_end + np.cos(rad_angle)*dist)
-                path.lineTo(x_end + np.sin(rad_angle)*dist, y_end - np.cos(rad_angle)*dist)
-        return path
-    """
         
 
     # TODO Implement firing visualization
     def update_firing_neurons(self):
         return
-
-    def simulate_time_stamp(self):
-        return
-
-    def toggle_simulation(self):
-        if self.timer.isActive():
-            self.timer.stop()
-            self.timer_pause_btn.setText("►")
-        else:
-            self.timer.start()
-            self.timer_pause_btn.setText("⏸")
 
     def return_to_launcher(self):
         self.launcher = guilauncher()
