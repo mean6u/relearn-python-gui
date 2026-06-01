@@ -128,11 +128,11 @@ class Network:
         """
 
         # Extremes of x and y ([x_min, x_max, y_min, y_max])
-        extremes = [100, -100, 100, -100]
+        extremes = [150, -150, 150, -150]
         # Distributing excitatory neurons
         for i in range(num_ex):
-            x = np.random.randint(-100, 100)
-            y = np.random.randint(-100, 100)
+            x = np.random.randint(-150, 150)
+            y = np.random.randint(-150, 150)
             if x < extremes[0]:
                 extremes[0] = x
             if x > extremes[1]:
