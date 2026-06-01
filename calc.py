@@ -128,6 +128,7 @@ def calculate_distance_kernel(network, sigma: float = 5.0 * 150.0):
 
 def structural_plasticity_step(network):
     """Slow process: Wird alle 100 ms aufgerufen."""
+    # Deletion of synaptic elements?
     deletions = []
 
     for i, neuron in enumerate(network.neurons):
@@ -162,6 +163,8 @@ def structural_plasticity_step(network):
         if any(val > 0 for val in deltas):
             deletions.append((i, deltas))
         
+    # TODO Add creation of new synapses (via assign_vacant_elements and check_assignment)
+    
 
 # Calculates synaptic connections among the neurons based on free synaptic elements and the
 # euclidean distance of the respective neurons
