@@ -263,7 +263,7 @@ class simulation(QMainWindow):
 
         self.timer_pause_btn = QPushButton("⏸")
         self.timer_pause_btn.clicked.connect(self.toggle_simulation)
-        self.timer_pause_btn.setStyleSheet("background-color: grey; color: white; font: bold 20px;")
+        self.timer_pause_btn.setStyleSheet("background-color: green; color: black; font: bold 20px;")
         timer_btn_layout.addWidget(self.timer_pause_btn)
 
 
@@ -307,8 +307,10 @@ class simulation(QMainWindow):
 
 
     def rewind_time(self):
-        if self.elapsed_ms < 1000: return
-        self.elapsed_ms -= 1000
+        if self.elapsed_ms < 1000:
+            self.elapsed_ms = 0
+        else:
+            self.elapsed_ms -= 1000
         self.display_time()
 
     def forward_time(self):
