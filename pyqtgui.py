@@ -254,11 +254,25 @@ class simulation(QMainWindow):
         self.timer.timeout.connect(self.simulate_time_stamp)
         self.timer.start(100)
 
+        timer_btn_layout = QHBoxLayout()
+
+        self.timer_rewind_btn = QPushButton("⏮")
+        self.timer_rewind_btn.clicked.connect(self.rewind_time)
+        self.timer_rewind_btn.setStyleSheet("background-color: grey; color: white; font: bold 20px; border-color: red;")
+        timer_btn_layout.addWidget(self.timer_rewind_btn)
+
         self.timer_pause_btn = QPushButton("⏸")
         self.timer_pause_btn.clicked.connect(self.toggle_simulation)
-        self.timer_pause_btn.setStyleSheet("background-color: green; color: black; font: bold 14px;")
+        self.timer_pause_btn.setStyleSheet("background-color: grey; color: white; font: bold 20px;")
+        timer_btn_layout.addWidget(self.timer_pause_btn)
 
-        layout.addWidget(self.timer_pause_btn)
+
+        self.timer_forward_btn = QPushButton("⏭")
+        self.timer_forward_btn.clicked.connect(self.forward_time)
+        self.timer_forward_btn.setStyleSheet("background-color: grey; color: white; font: bold 20px;")
+        timer_btn_layout.addWidget(self.timer_forward_btn)
+
+        layout.addLayout(timer_btn_layout)
 
 
 
@@ -282,12 +296,24 @@ class simulation(QMainWindow):
     def simulate_time_stamp(self):
         
         self.elapsed_ms += 100
+        self.display_time()
+
+    def display_time(self):
         total_seconds = self.elapsed_ms // 1000
         minutes = total_seconds // 60
         seconds = total_seconds % 60
         tenth_seconds = (self.elapsed_ms % 1000) // 100
         self.time_overlay.setText(f"{minutes:02d}:{seconds:02d}.{tenth_seconds:01d}")
 
+
+    def rewind_time(self):
+        if self.elapsed_ms < 1000: return
+        self.elapsed_ms -= 1000
+        self.display_time()
+
+    def forward_time(self):
+        self.elapsed_ms += 10000
+        self.display_time()
 
     # Toggle Pause/Resume Button for Simulation
 
