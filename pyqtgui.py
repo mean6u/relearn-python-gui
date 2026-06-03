@@ -225,7 +225,7 @@ class simulation(QMainWindow):
         self.in_spines = pg.ScatterPlotItem(size=6, symbol='s', brush=(46, 0, 213), pen=None)
 
         # Axonal Boutons
-        self.axons = pg.ScatterPlotItem(size=8, symbol='t', brush=(255, 255, 0), pen=None)
+        self.axons = pg.ScatterPlotItem(size=6, symbol='t', brush=(255, 255, 0), pen=None)
 
         self.view.addItem(self.ex_spines)
         self.view.addItem(self.in_spines)
@@ -239,10 +239,16 @@ class simulation(QMainWindow):
 
         # Legend
 
+        ex_neuron_symbol = pg.ScatterPlotItem(symbol = 'o', brush = (231, 76, 60), pen=None)
+        in_neuron_symbol = pg.ScatterPlotItem(symbol = 'o', brush = (46, 0, 213), pen=None)
+
+
         legend = pg.LegendItem((80,60), offset=(0,0))
         legend.setParentItem(self.view)
-        legend.addItem(self.ex_spines, 'Excitatory')
-        legend.addItem(self.in_spines, 'Inhibitory')
+        legend.addItem(ex_neuron_symbol, 'Excitatory Neuron')
+        legend.addItem(in_neuron_symbol, 'Inhibitory Neuron')
+        legend.addItem(self.ex_spines, 'Excitatory Spine')
+        legend.addItem(self.in_spines, 'Inhibitory Spine')
         legend.addItem(self.axons, 'Axons')
 
 
