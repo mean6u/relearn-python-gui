@@ -149,10 +149,19 @@ class Network:
 
         # Extremes of x and y ([x_min, x_max, y_min, y_max])
         extremes = [150, -150, 150, -150]
+
+        # Building a collision avoiding grid to store remaining coordinates
+        remaining_x = np.arange(extremes[1], extremes[0] + 1)
+        remaining_y = np.arange(extremes[1], extremes[0] + 1)
+
+        X,Y = np.meshgrid(remaining_x, remaining_y)
+
+        coordinates = np.stack([X.ravel(), Y.ravel()], axis=-1)
+        remaining_coordinates = set(tuple(c) for c in coordinates)
+
         # Distributing excitatory neurons
         for i in range(num_ex):
-            x = np.random.randint(-150, 150)
-            y = np.random.randint(-150, 150)
+            x, y = list(remaining_coordinates)[np.random.choice(len(remaining_coordinates))]
             if x < extremes[0]:
                 extremes[0] = x
             if x > extremes[1]:
@@ -161,14 +170,23 @@ class Network:
                 extremes[2] = y
             if y > extremes[3]:
                 extremes[3] = y
+            
+            for dx in range(-20, 20):
+                for dy in range(-20, 20):
+                    remaining_coordinates.discard((x + dx, y + dy))
+            
             neuron: Neuron = Neuron(x, y, i, NeuronType.EXCITATORY)
             self.neurons.append(neuron)
             self.excitatory.append(neuron)
         
         # Distributing inhibitory neurons
         for i in range(num_ex, num_neurons):
-            x = np.random.randint(extremes[0], extremes[1])
-            y = np.random.randint(extremes[2], extremes[3])
+            x, y = list(remaining_coordinates)[np.random.choice(len(remaining_coordinates))]
+
+            for dx in range(-20, 20):
+                for dy in range(-20, 20):
+                    remaining_coordinates.discard((x + dx, y + dy))
+
             neuron: Neuron = Neuron(x, y, i, NeuronType.INHIBITORY)
             self.neurons.append(neuron)
             self.inhibitory.append(neuron)
