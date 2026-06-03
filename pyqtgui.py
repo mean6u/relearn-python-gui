@@ -219,10 +219,10 @@ class simulation(QMainWindow):
         # Synaptic Elements Layer
 
         # Excitatory Dendritic Spines
-        self.ex_spines = pg.ScatterPlotItem(size=6, symbol='s', brush=(46, 0, 213), pen=None)
+        self.ex_spines = pg.ScatterPlotItem(size=6, symbol='s', brush=(231, 76, 60), pen=None)
 
         # Inhibitory Dendritic Spines
-        self.in_spines = pg.ScatterPlotItem(size=6, symbol='s', brush=(231, 76, 60), pen=None)
+        self.in_spines = pg.ScatterPlotItem(size=6, symbol='s', brush=(46, 0, 213), pen=None)
 
         # Axonal Boutons
         self.axons = pg.ScatterPlotItem(size=8, symbol='t', brush=(255, 255, 0), pen=None)
@@ -340,8 +340,8 @@ class simulation(QMainWindow):
         # Types of the Neurons
 
         TYPE_CONFIG = {
-            NeuronType.EXCITATORY: {"symbol": "o", "brush": (46, 0, 213)},
-            NeuronType.INHIBITORY: {"symbol": "o", "brush": (231, 76, 60)},
+            NeuronType.EXCITATORY: {"symbol": "o", "brush": (231, 76, 60)},
+            NeuronType.INHIBITORY: {"symbol": "o", "brush": (46, 0, 213)},
         }
 
 
