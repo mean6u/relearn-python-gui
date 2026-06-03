@@ -237,6 +237,15 @@ class simulation(QMainWindow):
         self.spawn_neurons()
 
 
+        # Legend
+
+        legend = pg.LegendItem((80,60), offset=(0,0))
+        legend.setParentItem(self.view)
+        legend.addItem(self.ex_spines, 'Excitatory')
+        legend.addItem(self.in_spines, 'Inhibitory')
+        legend.addItem(self.axons, 'Axons')
+
+
         # Timer
 
         self.elapsed_ms = 0 # keep track of elapsed time, linked with timer
