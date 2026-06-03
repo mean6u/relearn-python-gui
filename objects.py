@@ -167,8 +167,8 @@ class Network:
         
         # Distributing inhibitory neurons
         for i in range(num_ex, num_neurons):
-            x = np.random.randint(extremes[0] + (extremes[1]-extremes[0])/4, extremes[1] - (extremes[1]-extremes[0])/4)
-            y = np.random.randint(extremes[2] + (extremes[3]-extremes[2])/4, extremes[3] - (extremes[3]-extremes[2])/4)
+            x = np.random.randint(extremes[0], extremes[1])
+            y = np.random.randint(extremes[2], extremes[3])
             neuron: Neuron = Neuron(x, y, i, NeuronType.INHIBITORY)
             self.neurons.append(neuron)
             self.inhibitory.append(neuron)
