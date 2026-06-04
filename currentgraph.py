@@ -8,7 +8,7 @@ class currentgraph():
 
     
 
-    def generate_synaptic_positions(self, neuron, axon_count, exc_count, inh_count):
+    def generate_synaptic_positions(self, neuron, axon_count, exc_count, inh_count, radius = 6):
         ax_x = []
         ax_y = []
 
@@ -64,14 +64,6 @@ class currentgraph():
                 i += 1
                 remaining_inh -= 1
 
-        #axon_angles = angles[:axon_count]
-
-        #exc_angles = angles[axon_count:axon_count + exc_count]
-
-        #inh_angles = angles[axon_count + exc_count:]
-
-
-        radius = 6
 
         for angle in axon_angles:
 
@@ -122,7 +114,7 @@ class currentgraph():
 
             (ax_x, ax_y,
              exc_x, exc_y,
-             inh_x, inh_y) = self.generate_synaptic_positions(neuron, axon_count, exc_count, inh_count)
+             inh_x, inh_y) = self.generate_synaptic_positions(neuron, axon_count, exc_count, inh_count, 12)
 
             all_ax_x.extend(ax_x)
             all_ax_y.extend(ax_y)
@@ -132,12 +124,6 @@ class currentgraph():
 
             all_inh_x.extend(inh_x)
             all_inh_y.extend(inh_y)
-
-        #self.axons.setData(x = all_ax_x, y = all_ax_y)
-
-        #self.ex_spines.setData(x = all_exc_x, y = all_exc_y)
-
-        #self.in_spines.setData(x = all_inh_x, y = all_inh_y)
         
         return (all_ax_x, all_ax_y,
                 all_exc_x, all_exc_y,
