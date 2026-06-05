@@ -102,7 +102,6 @@ class Network:
         self.excitatory = []
         self.inhibitory = []
         self.num_neurons = num_neurons
-        self.kernel = calc.calculate_distance_kernel(sigma=sigma_dist)
 
         types = [0, 1]
         probabilities = [inhibitory_probability, excitatory_probability]
@@ -199,6 +198,8 @@ class Network:
         # functions as "from-to graph", entry equals count of synapses from this neuron to the other one
         # TODO matrix of boolean values / 0s and 1s?
         self.synapses = np.zeros((num_neurons, num_neurons), dtype=int)
+        self.kernel = calc.calculate_distance_kernel(self, sigma=sigma_dist)
+
 
     def get_neurons(self):
         return self.neurons
@@ -221,17 +222,10 @@ class Network:
     def get_incoming_synapses(self, neuron_index: int):
         return self.synapses[neuron_index, :]
     
-    def is_inhibitory(self, neuron_index: int):
-        return self.neurons[neuron_index].is_inhibitory()
-
-    def is_excitatory(self, neuron_index: int):
-        return self.neurons[neuron_index].is_excitatory()
     
     # should maybe only add 1 to the current value?
     def update_synapses(self, x: int, y: int, value):
         self.synapses[x, y] += value
-
-    
 
     def reset_synapse(self, x: int, y: int):
         self.synapses[x, y] = 0

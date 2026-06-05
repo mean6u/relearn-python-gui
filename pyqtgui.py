@@ -170,7 +170,7 @@ class simulation(QMainWindow):
 
         # Speed for Timer
 
-        self.speed_factor = 1.0
+        self.speed_factor = 1
 
 
         # Test
@@ -279,9 +279,19 @@ class simulation(QMainWindow):
         # Timer Speedup
         
         timer_speed_layout = QHBoxLayout()
+
         self.timer_speed_txt = QLabel("Simulation Speed")
-        self.timer_speed_slider = QSlider(1.0, 4.0)
-        self.timer_speed_slider.setValue(1.0)
+        timer_speed_layout.addWidget(self.timer_speed_txt)
+
+        self.timer_speed_slider = QSlider(Qt.Orientation.Horizontal)
+        self.timer_speed_slider.setMinimum(1)
+        self.timer_speed_slider.setMaximum(4)
+        self.timer_speed_slider.setValue(1)
+        self.timer_speed_slider.setTickPosition(QSlider.TickPosition.TicksBelow)
+        self.timer_speed_slider.setTickInterval(1)
+        timer_speed_layout.addWidget(self.timer_speed_slider)
+
+        layout.addLayout(timer_speed_layout)
 
 
         # Timer Player
@@ -309,11 +319,11 @@ class simulation(QMainWindow):
         # Timer for slow and fast process
 
         self.timer_slow = QTimer()
-        self.timer_slow.connect(self.slow_process())
+        self.timer_slow.timeout.connect(self.slow_process)
         self.timer_slow.start(1000)
 
         self.timer_fast = QTimer()
-        self.timer_fast.connect(self.fast_process())
+        self.timer_fast.timeout.connect(self.fast_process)
         self.timer_fast.start(10)
 
 
@@ -336,17 +346,21 @@ class simulation(QMainWindow):
 
 
     def simulate_time_stamp(self):
-        
         self.elapsed_ms += 100 * self.speed_factor
         self.display_time()
 
 
     def slow_process(self):
-        self.graph.update_slow_processes()
+        self.graph.update_slow_processes(self.speed_factor)
+        self.draw_synaptic_elements(*self.graph.update_synaptic_elements())
+
+        
+
+
 
 
     def fast_process(self):
-        self.graph.update_fast_processes()
+        self.graph.update_fast_processes(self.speed_factor)
 
 
     def display_time(self):
@@ -354,7 +368,8 @@ class simulation(QMainWindow):
         minutes = total_seconds // 60
         seconds = total_seconds % 60
         tenth_seconds = (self.elapsed_ms % 1000) // 100
-        self.time_overlay.setText(f"{minutes:02d}:{seconds:02d}.{tenth_seconds:01d}")
+        # self.time_overlay.setText("Ös üs halt :/")
+        self.time_overlay.setText(f"{minutes:.2f}:{seconds:.2f}.{tenth_seconds:.1f}")
 
 
     def rewind_time(self):
@@ -406,19 +421,16 @@ class simulation(QMainWindow):
 
         self.network_graph.setData(pos=pos, pen=pg.mkPen(color=(150, 150, 150), width=2), size=25, symbol=symbols, symbolBrush=colors, symbolPen=None)
 
-
-        (all_ax_x, all_ax_y,
-         all_exc_x, all_exc_y,
-         all_inh_x, all_inh_y) = self.graph.update_synaptic_elements()
+        self.draw_synaptic_elements(*self.graph.update_synaptic_elements())
         
+    
 
-        self.axons.setData(x = all_ax_x, y = all_ax_y)
+    def draw_synaptic_elements(self, ax_x, ax_y, exc_x, exc_y, inh_x, inh_y):
+        self.axons.setData(x = ax_x, y = ax_y)
+        self.ex_spines.setData(x = exc_x, y = exc_y)
+        self.in_spines.setData(x = inh_x, y = inh_y)
 
-        self.ex_spines.setData(x = all_exc_x, y = all_exc_y)
 
-        self.in_spines.setData(x = all_inh_x, y = all_inh_y)
-        
-                
 
     # TODO Implement firing visualization
     def update_firing_neurons(self):

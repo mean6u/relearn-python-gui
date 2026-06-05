@@ -121,7 +121,7 @@ def calculate_kernel_value(neuron_out, neuron_in, sigma: float = 5.0 * 150.0):
     return math.exp(-dist_sq / sigma**2)
 
 
-def calculate_distance_kernel(network, sigma: float = 5.0 * 150.0) -> np.ndarray[np.adarray]:
+def calculate_distance_kernel(network, sigma: float = 5.0 * 150.0) -> np.ndarray[np.ndarray]:
     num_neurons = network.num_neurons
     value_matrix = np.zeros((num_neurons, num_neurons))
     for n_out in range(num_neurons):
@@ -142,18 +142,24 @@ def structural_plasticity_step(network):
     #TODO make more efficient (store number of bound synaptic elements in variable^)
     for i, neuron in enumerate(network.neurons):
         #Herausfinden, wie viele Elemente aktuell gebunden sind
-        #TODO make more efficient
+        
         bound_A = np.sum(network.get_outgoing_synapses(i)) # Ausgehende Synapsen (Spalte i)
-        bound_D_ex = np.sum(int(network.is_excitatory(i)) * network.get_incoming_synapses(i)) # Eingehend von exzitatorischen
-        bound_D_in = np.sum(int(network.is_inhibitory(i)) * network.get_incoming_synapses(i)) # Eingehend von inhibitorischen
-
+        if neuron.is_excitatory():
+            bound_D_ex = np.sum(network.get_incoming_synapses(i)) # Eingehend von exzitatorischen
+        else:
+            bound_D_ex = 0
+        
+        if neuron.is_inhibitory():
+            bound_D_in = np.sum(network.get_incoming_synapses(i)) # Eingehend von inhibitorischen
+        else:
+            bound_D_in = 0
             # Das Neuron aktualisieren
-        deltas = update_structural_elements(neuron, bound_A, bound_D_ex, bound_D_in)
+        update_structural_elements(neuron, bound_A, bound_D_ex, bound_D_in)
             
             #Abbau-Aufträge merken
 
     # Deletes synaptic elements (den tatsächlichen Abbau im Netzwerk durchführen)
-    network.execute_deletions_of_synaptical_ellements()#TODO make more efficient()
+    network.execute_deletions_of_synaptical_elements()#TODO make more efficient()
 
     all_vacA = []
     all_D_ex = []
@@ -169,11 +175,9 @@ def structural_plasticity_step(network):
         bound_D_in = np.sum(int(network.is_inhibitory(i)) * network.get_incoming_synapses(i)) # Eingehend von inhibitorischen
 
             # Das Neuron aktualisieren
-        deltas = update_structural_elements(neuron, bound_A, bound_D_ex, bound_D_in)
+        update_structural_elements(neuron, bound_A, bound_D_ex, bound_D_in)
             
             #Abbau-Aufträge merken
-        if any(val > 0 for val in deltas):
-            deletions.append((i, deltas))
     """
     # TODO Add creation of new synapses (via assign_vacant_elements and check_assignment)
     
