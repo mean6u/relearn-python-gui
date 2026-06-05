@@ -51,6 +51,7 @@ class Neuron:
         # dz_i / dt: Growth rate of synaptic elements (calculated by multiplying nu with term that depends on calcium level)
 
         # TODO understand + comment (vacant synaptic elements decay over time; because we can only remove entire synaptic elements?)
+        # Current decaying rate
         self.decay_acc_A = 0.0
         self.decay_acc_D_ex = 0.0
         self.decay_acc_D_in = 0.0
@@ -96,11 +97,12 @@ class Synapse:
         self.id = id
 
 class Network:
-    def __init__(self, num_neurons: int, excitatory_probability: float = 0.8, inhibitory_probability: float = 0.2, exact_percentage: bool = True):
+    def __init__(self, num_neurons: int, excitatory_probability: float = 0.8, inhibitory_probability: float = 0.2, exact_percentage: bool = True, sigma_dist: float = 5.0 * 150.0):
         self.neurons = []
         self.excitatory = []
         self.inhibitory = []
         self.num_neurons = num_neurons
+        self.kernel = calc.calculate_distance_kernel(sigma=sigma_dist)
 
         types = [0, 1]
         probabilities = [inhibitory_probability, excitatory_probability]
@@ -240,8 +242,14 @@ class Network:
     def structural_plasticity_step(self):
         calc.structural_plasticity_step(self)
     
-    def execute_deletions(self, deletions):
+    def shuffle_neurons(self):
+        return np.random.shuffle(self.neurons)
 
-        print("Executing deletions:")
+    def execute_deletions_of_synaptical_elements(self):
+        # Delete synaptic elements completely at random?
+
+        pass
+
         # TODO implement deletion of synapses based on the deltas (randomly select synapses to delete)
+
         

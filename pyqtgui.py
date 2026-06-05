@@ -168,6 +168,11 @@ class simulation(QMainWindow):
         self.neurons = self.graph.neurons
 
 
+        # Speed for Timer
+
+        self.speed_factor = 1.0
+
+
         # Test
         # TODO Remove
         for neuron in self.neurons:
@@ -270,6 +275,17 @@ class simulation(QMainWindow):
         self.timer.timeout.connect(self.simulate_time_stamp)
         self.timer.start(100)
 
+
+        # Timer Speedup
+        
+        timer_speed_layout = QHBoxLayout()
+        self.timer_speed_txt = QLabel("Simulation Speed")
+        self.timer_speed_slider = QSlider(1.0, 4.0)
+        self.timer_speed_slider.setValue(1.0)
+
+
+        # Timer Player
+
         timer_btn_layout = QHBoxLayout()
 
         self.timer_rewind_btn = QPushButton("⏮")
@@ -289,6 +305,16 @@ class simulation(QMainWindow):
         timer_btn_layout.addWidget(self.timer_forward_btn)
 
         layout.addLayout(timer_btn_layout)
+
+        # Timer for slow and fast process
+
+        self.timer_slow = QTimer()
+        self.timer_slow.connect(self.slow_process())
+        self.timer_slow.start(1000)
+
+        self.timer_fast = QTimer()
+        self.timer_fast.connect(self.fast_process())
+        self.timer_fast.start(10)
 
 
 
@@ -311,8 +337,17 @@ class simulation(QMainWindow):
 
     def simulate_time_stamp(self):
         
-        self.elapsed_ms += 100
+        self.elapsed_ms += 100 * self.speed_factor
         self.display_time()
+
+
+    def slow_process(self):
+        self.graph.update_slow_processes()
+
+
+    def fast_process(self):
+        self.graph.update_fast_processes()
+
 
     def display_time(self):
         total_seconds = self.elapsed_ms // 1000

@@ -5,6 +5,7 @@ class currentgraph():
     def __init__(self, neuron_count: int, excitatory_probability: float = 0.8, inhibitory_probability: float = 0.2, exact_percentage: bool = True):
         network = Network(neuron_count, excitatory_probability, inhibitory_probability, exact_percentage)
         self.neurons = network.neurons
+        
 
     
 
@@ -128,3 +129,9 @@ class currentgraph():
         return (all_ax_x, all_ax_y,
                 all_exc_x, all_exc_y,
                 all_inh_x, all_inh_y)
+
+    def update_slow_processes(self):
+            pass
+        
+    def update_fast_processes(self):
+            pass

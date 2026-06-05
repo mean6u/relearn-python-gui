@@ -50,7 +50,7 @@ def calculate_growth_rate(neuron, eta: float, epsilon: float = 0.7, v: float = 0
 
 
 
-def update_structural_elements(neuron, bound_A: int, bound_D_ex: int, bound_D_in: int, dt: float = 100.0) -> Tuple[float, float, float]:
+def update_structural_elements(neuron, bound_A: int, bound_D_ex: int, bound_D_in: int, dt: float = 100.0):
     """
     This method models the slow processes.
     """
@@ -76,37 +76,44 @@ def update_structural_elements(neuron, bound_A: int, bound_D_ex: int, bound_D_in
     vac_D_in = old_D_in - bound_D_in
 
     #Equ. 5: Deterministischer Zerfall ungenutzter Vakanzen
-    tau_vac = 10.0  
+    tau_vac = 10.0
+
+    # Axonal update
     if vac_A > 0:
         neuron.decay_acc_A += vac_A / tau_vac
         decayed = int(neuron.decay_acc_A)
         if decayed > 0:
-            neuron.decay_acc_A -= decayed
+            #neuron.decay_acc_A -= decayed
             neuron.A -= decayed
+            neuron.vac_A -= decayed
 
+    # Dendritic excitatory update
     if vac_D_ex > 0:
         neuron.decay_acc_D_ex += vac_D_ex / tau_vac
         decayed = int(neuron.decay_acc_D_ex)
         if decayed > 0:
-            neuron.decay_acc_D_ex -= decayed
+            #neuron.decay_acc_D_ex -= decayed
             neuron.D_ex -= decayed
+            neuron.vac_D_ex -= decayed
 
+    # Dendritic inhibitory update
     if vac_D_in > 0:
         neuron.decay_acc_D_in += vac_D_in / tau_vac
         decayed = int(neuron.decay_acc_D_in)
         if decayed > 0:
-            neuron.decay_acc_D_in -= decayed
+            #neuron.decay_acc_D_in -= decayed
             neuron.D_in -= decayed
+            neuron.vac_D_in -= decayed
 
     
     #For example, if neuron j had previously 100 axonal elements bound in 100 outgoing
     #synapses [...] and $A_j$ decreased to e.g. 95.32 due to Eq. 4, $A_j$ is rounded off to 95 and 
     #consequently neuron j has to delete $\Delta A_j$ outgoing synapses at the next update in connectivity.
-    delta_A = int(neuron.A) - old_A
-    delta_D_ex = int(neuron.D_ex) - old_D_ex
-    delta_D_in = int(neuron.D_in) - old_D_in
+    #delta_A = int(neuron.A) - old_A
+    #delta_D_ex = int(neuron.D_ex) - old_D_ex
+    #delta_D_in = int(neuron.D_in) - old_D_in
     
-    return delta_A, delta_D_ex, delta_D_in
+    #return delta_A, delta_D_ex, delta_D_in
 
 # TODO change all occurrences of sigma to 5.0 * 150 * 10^-6? Because it's micrometers
 def calculate_kernel_value(neuron_out, neuron_in, sigma: float = 5.0 * 150.0):
@@ -114,25 +121,28 @@ def calculate_kernel_value(neuron_out, neuron_in, sigma: float = 5.0 * 150.0):
     return math.exp(-dist_sq / sigma**2)
 
 
-def calculate_distance_kernel(network, sigma: float = 5.0 * 150.0):
-    """Equ 9"""
+def calculate_distance_kernel(network, sigma: float = 5.0 * 150.0) -> np.ndarray[np.adarray]:
     num_neurons = network.num_neurons
-    for i in range(num_neurons):
-        for j in range(num_neurons):
-            if i == j:
+    value_matrix = np.zeros((num_neurons, num_neurons))
+    for n_out in range(num_neurons):
+        for n_in in range(num_neurons):
+            if n_out == n_in:
                 continue
             # dist_sq = (network.neurons[i].x - network.neurons[j].x)**2 + (network.neurons[i].y - network.neurons[j].y)**2
             # network.K[i, j] = math.exp(-dist_sq / sigma**2)
-            network.K[i, j] = calculate_kernel_value(network.neurons[i], network.neurons[j], sigma)
+            value_matrix[n_out, n_in] = calculate_kernel_value(network.neurons[n_out], network.neurons[n_in], sigma)
+    return value_matrix
 
 
 def structural_plasticity_step(network):
     """Slow process: Wird alle 100 ms aufgerufen."""
     # Deletion of synaptic elements?
-    deletions = []
+    # deletions = []
 
+    #TODO make more efficient (store number of bound synaptic elements in variable^)
     for i, neuron in enumerate(network.neurons):
         #Herausfinden, wie viele Elemente aktuell gebunden sind
+        #TODO make more efficient
         bound_A = np.sum(network.get_outgoing_synapses(i)) # Ausgehende Synapsen (Spalte i)
         bound_D_ex = np.sum(int(network.is_excitatory(i)) * network.get_incoming_synapses(i)) # Eingehend von exzitatorischen
         bound_D_in = np.sum(int(network.is_inhibitory(i)) * network.get_incoming_synapses(i)) # Eingehend von inhibitorischen
@@ -141,18 +151,20 @@ def structural_plasticity_step(network):
         deltas = update_structural_elements(neuron, bound_A, bound_D_ex, bound_D_in)
             
             #Abbau-Aufträge merken
-        if any(val > 0 for val in deltas):
-            deletions.append((i, deltas))
 
-    # den tatsächlichen Abbau im Netzwerk durchführen
-    network.execute_deletions(deletions)
+    # Deletes synaptic elements (den tatsächlichen Abbau im Netzwerk durchführen)
+    network.execute_deletions_of_synaptical_ellements()#TODO make more efficient()
 
     all_vacA = []
     all_D_ex = []
     all_D_in = []
+    """
     for i, neuron in enumerate(network.neurons):
         #Herausfinden, wie viele Elemente aktuell gebunden sind
+    
         bound_A = np.sum(network.get_outgoing_synapses(i)) # Ausgehende Synapsen (Spalte i)
+        
+        
         bound_D_ex = np.sum(int(network.is_excitatory(i)) * network.get_incoming_synapses(i)) # Eingehend von exzitatorischen
         bound_D_in = np.sum(int(network.is_inhibitory(i)) * network.get_incoming_synapses(i)) # Eingehend von inhibitorischen
 
@@ -162,7 +174,7 @@ def structural_plasticity_step(network):
             #Abbau-Aufträge merken
         if any(val > 0 for val in deltas):
             deletions.append((i, deltas))
-        
+    """
     # TODO Add creation of new synapses (via assign_vacant_elements and check_assignment)
     
 
@@ -241,13 +253,13 @@ def assign_vacant_elements(network) -> list:
         sums["axonal inhibitory"] -= 1
         sums["dendritic inhibitory"] -= 1
 
-def check_assignment(assignments) -> list:
+def check_assignment(network, assignments) -> list:
     """
     Takes a list of potential connections and returns a list of synapses to be established based on the euclidean distance.
     """
     actual_synapses: list = []
     for neuron_pair in assignments:
         outgoing, incoming = neuron_pair
-        if random.uniform(0, 1) < calculate_kernel_value(outgoing, incoming):
+        if random.uniform(0, 1) < network.kernel[outgoing, incoming]:
             actual_synapses.append(neuron_pair)
     return actual_synapses
