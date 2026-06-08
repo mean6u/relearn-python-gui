@@ -50,8 +50,6 @@ class Neuron:
         # z_i: Number of synaptic elements of a neuron (not explicitly computed)
         # dz_i / dt: Growth rate of synaptic elements (calculated by multiplying nu with term that depends on calcium level)
 
-        # TODO understand + comment (vacant synaptic elements decay over time; because we can only remove entire synaptic elements?)
-        # Current decaying rate
         self.decay_acc_A = 0.0
         self.decay_acc_D_ex = 0.0
         self.decay_acc_D_in = 0.0

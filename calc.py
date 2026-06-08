@@ -54,12 +54,6 @@ def update_structural_elements(neuron, bound_A: int, bound_D_ex: int, bound_D_in
     """
     This method models the slow processes.
     """
-    #In the numerical integration, $A_j$, $D_i^{ex}$ and $D_i^{in}$ are treated as continuous variables, 
-    #but when synaptic elements are deleted or used for synapse formation, the values of $A_j$, $D_i^{ex}$ and $D_i^{in}$ 
-    #are rounded off to their smallest integer values.""""
-    old_A = int(neuron.A)
-    old_D_ex = int(neuron.D_ex)
-    old_D_in = int(neuron.D_in)
 
     #The value of $\eta_z$ depends on the type of synaptic element 
     #Because $\eta_D = 0.1$ and $\eta_A = 0.4$ lead to network recovery, we compare the results
@@ -69,39 +63,46 @@ def update_structural_elements(neuron, bound_A: int, bound_D_ex: int, bound_D_in
     neuron.D_ex += calculate_growth_rate(neuron, eta=0.1) * dt
     neuron.D_in += calculate_growth_rate(neuron, eta=0.1) * dt
 
+    #In the numerical integration, $A_j$, $D_i^{ex}$ and $D_i^{in}$ are treated as continuous variables, 
+    #but when synaptic elements are deleted or used for synapse formation, the values of $A_j$, $D_i^{ex}$ and $D_i^{in}$ 
+    #are rounded off to their smallest integer values.""""
 
     #Equ. 8: 
-    vac_A = old_A - bound_A
-    vac_D_ex = old_D_ex - bound_D_ex
-    vac_D_in = old_D_in - bound_D_in
+    neuron.vac_A = int(neuron.A) - bound_A
+    neuron.vac_D_ex = int(neuron.D_ex) - bound_D_ex
+    neuron.vac_D_in =  int(neuron.D_in) - bound_D_in
 
     #Equ. 5: Deterministischer Zerfall ungenutzter Vakanzen
     tau_vac = 10.0
 
     # Axonal update
-    if vac_A > 0:
-        neuron.decay_acc_A += vac_A / tau_vac
+    if neuron.vac_A > 0:
+        neuron.decay_acc_A += neuron.vac_A / tau_vac
         decayed = int(neuron.decay_acc_A)
+        #if abrage eigentlich nicht nötig aber trozdem vorhanden aus performanze gründen
         if decayed > 0:
-            #neuron.decay_acc_A -= decayed
+            #decay_acc_A (und auch decay_acc_D_ex, decay_acc_D_in) muss um den Anteil der Elemente reduziert werden, die in diesem schritt verfallen,
+            #da sonst im nächsten Schritt wieder die gleiche Anzahl an Elementen verfallen würde, 
+            #obwohl sie schon verfallen sind. 
+            neuron.decay_acc_A -= decayed
             neuron.A -= decayed
             neuron.vac_A -= decayed
 
     # Dendritic excitatory update
-    if vac_D_ex > 0:
-        neuron.decay_acc_D_ex += vac_D_ex / tau_vac
+    if neuron.vac_D_ex > 0:
+        neuron.decay_acc_D_ex += neuron.vac_D_ex / tau_vac
         decayed = int(neuron.decay_acc_D_ex)
         if decayed > 0:
-            #neuron.decay_acc_D_ex -= decayed
+            neuron.decay_acc_D_ex -= decayed
             neuron.D_ex -= decayed
             neuron.vac_D_ex -= decayed
 
     # Dendritic inhibitory update
-    if vac_D_in > 0:
-        neuron.decay_acc_D_in += vac_D_in / tau_vac
+    if neuron.vac_D_in > 0:
+        neuron.decay_acc_D_in += neuron.vac_D_in / tau_vac
         decayed = int(neuron.decay_acc_D_in)
         if decayed > 0:
-            #neuron.decay_acc_D_in -= decayed
+            neuron.decay_acc_D_in -= decayed
             neuron.D_in -= decayed
             neuron.vac_D_in -= decayed
 
@@ -132,6 +133,7 @@ def calculate_distance_kernel(network, sigma: float = 5.0 * 150.0) -> np.ndarray
             # network.K[i, j] = math.exp(-dist_sq / sigma**2)
             value_matrix[n_out, n_in] = calculate_kernel_value(network.neurons[n_out], network.neurons[n_in], sigma)
     return value_matrix
+
 
 
 def structural_plasticity_step(network):

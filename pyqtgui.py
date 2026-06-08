@@ -176,11 +176,10 @@ class simulation(QMainWindow):
         # Test
         # TODO Remove
         for neuron in self.neurons:
-            neuron.vac_A = 4
-            neuron.vac_D_ex = 6
-            neuron.vac_D_in = 6
+            neuron.A = 4
+            neuron.D_ex = 6
+            neuron.D_in = 6
         
-        #print(self.graph.neurons[0].vac_A)
 
 
         # Configs
