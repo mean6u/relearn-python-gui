@@ -53,8 +53,9 @@ class Neuron:
         self.decay_acc_A = 0.0
         self.decay_acc_D_ex = 0.0
         self.decay_acc_D_in = 0.0
-
-        # TODO gebundene Elemente nur in Matrix (self.C in Network)?
+        
+        #gesamte mänge anliegender Spannung
+        
 
     def get_id(self):
         return self.id
@@ -100,6 +101,10 @@ class Network:
         self.excitatory = []
         self.inhibitory = []
         self.num_neurons = num_neurons
+
+        #gesamt anliegende spannung aller Neuronen
+        self.I_syn = np.zeros(num_neurons, dtype=float) 
+
 
         types = [0, 1]
         probabilities = [inhibitory_probability, excitatory_probability]
@@ -214,6 +219,10 @@ class Network:
     def get_synapses(self):
         return self.synapses
     
+    def get_neuron_by_index(self, index: int):
+        return self.neurons[index]
+    
+
     def get_outgoing_synapses(self, neuron_index: int):
         return self.synapses[:, neuron_index]
     

@@ -134,12 +134,37 @@ def calculate_distance_kernel(network, sigma: float = 5.0 * 150.0) -> np.ndarray
             value_matrix[n_out, n_in] = calculate_kernel_value(network.neurons[n_out], network.neurons[n_in], sigma)
     return value_matrix
 
+def electrical_activity_step(network):
+    """Fast process: Wird alle 1 ms aufgerufen."""
+    mu = 5.0
+
+    network.I_syn *= np.exp(-1.0 / mu) # Exponentieller Spannungsabfall von allen Neurohnen 
+
+    spiked_index = []
+    for i, neuron in enumerate(network.neurons):
+        #Hintergruund aktivität wird nach paiper so berechnet
+        I_ext = I_ext = np.random.normal(5.0, 1.0)
+        I_total = I_ext + network.I_syn[i]
+
+        #feuer frei!!!
+        if step_electrical(neuron, I_total):
+            spiked_index.append(i)
+                     
+        step_calcium(neuron)
+        
+    for i in spiked_index:
+        #addiere auf auf alle rausgehenden nurohnen die entsprechende spannung
+        #TODO müssen wir die spannung noch gewichten???
+        network.I_syn[network.get_outgoing_synapses(i)] += 1.0 if neuron.is_excitatory() else -1.0
+
+         
 
 
 def structural_plasticity_step(network):
     """Slow process: Wird alle 100 ms aufgerufen."""
     # Deletion of synaptic elements?
     # deletions = []
+
 
     #TODO make more efficient (store number of bound synaptic elements in variable^)
     for i, neuron in enumerate(network.neurons):

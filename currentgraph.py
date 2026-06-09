@@ -137,4 +137,4 @@ class currentgraph():
         
     def update_fast_processes(self, steps):
         for _ in range(steps):
-            pass
+            calc.electrical_activity_step(self.network)
