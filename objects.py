@@ -199,8 +199,8 @@ class Network:
         # Probability Kernel
         self.K = np.zeros((num_neurons, num_neurons), dtype=float)
         # functions as "from-to graph", entry equals count of synapses from this neuron to the other one
-        # TODO matrix of boolean values / 0s and 1s?
-        self.synapses = np.zeros((num_neurons, num_neurons), dtype=int)
+        
+        self.synapses = np.zeros((num_neurons, num_neurons), dtype=bool)
         self.kernel = calc.calculate_distance_kernel(self, sigma=sigma_dist)
 
 
@@ -243,14 +243,15 @@ class Network:
     def structural_plasticity_step(self):
         calc.structural_plasticity_step(self)
     
-    def shuffle_neurons(self):
-        return np.random.shuffle(self.neurons)
 
-    def execute_deletions_of_synaptical_elements(self):
-        # Delete synaptic elements completely at random?
+    
+    def get_conction_index(self):
+        """returns the (from, to) index of all synapses"""
+        return np.argwhere(self.synapses)
+    
+        
 
-        pass
+        
 
-        # TODO implement deletion of synapses based on the deltas (randomly select synapses to delete)
 
         

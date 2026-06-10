@@ -185,8 +185,15 @@ def structural_plasticity_step(network):
             
             #Abbau-Aufträge merken
 
-    # Deletes synaptic elements (den tatsächlichen Abbau im Netzwerk durchführen)
-    network.execute_deletions_of_synaptical_elements()#TODO make more efficient()
+   
+    network.execute_deletions_of_synaptical_elements()
+
+    #Zufälliges löschen von synapsen
+    conection = network.get_conction_index()
+    p = 1/len(conection)
+    random_delition_index = np.random.rand(len(conection)) < p
+    network.synapses[random_delition_index] = False
+
 
     all_vacA = []
     all_D_ex = []
@@ -207,6 +214,7 @@ def structural_plasticity_step(network):
             #Abbau-Aufträge merken
     """
     # TODO Add creation of new synapses (via assign_vacant_elements and check_assignment)
+
     
 
 # Calculates synaptic connections among the neurons based on free synaptic elements and the
