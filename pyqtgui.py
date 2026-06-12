@@ -179,7 +179,12 @@ class simulation(QMainWindow):
             neuron.A = 4
             neuron.D_ex = 6
             neuron.D_in = 6
+
+            neuron.vac_A = 4
+            neuron.vac_D_ex = 6
+            neuron.vac_D_in = 6
         
+        self.graph.network.synapses[0, 1] = True
 
 
         # Configs
@@ -217,20 +222,22 @@ class simulation(QMainWindow):
         # Neuron Layer
         
         self.network_graph = pg.GraphItem()
+        self.synapse_lines = pg.GraphItem()
 
         self.view.addItem(self.network_graph)
+        self.view.addItem(self.synapse_lines)
 
 
         # Synaptic Elements Layer
 
         # Excitatory Dendritic Spines
-        self.ex_spines = pg.ScatterPlotItem(size=6, symbol='s', brush=(231, 76, 60), pen=None)
+        self.ex_spines = pg.ScatterPlotItem(size=2, symbol='s', brush=(231, 76, 60), pen=None, pxMode=False)
 
         # Inhibitory Dendritic Spines
-        self.in_spines = pg.ScatterPlotItem(size=6, symbol='s', brush=(46, 0, 213), pen=None)
+        self.in_spines = pg.ScatterPlotItem(size=2, symbol='s', brush=(46, 0, 213), pen=None, pxMode=False)
 
         # Axonal Boutons
-        self.axons = pg.ScatterPlotItem(size=6, symbol='t', brush=(255, 255, 0), pen=None)
+        self.axons = pg.ScatterPlotItem(size=2, symbol='t', brush=(255, 255, 0), pen=None, pxMode=False)
 
         self.view.addItem(self.ex_spines)
         self.view.addItem(self.in_spines)
@@ -288,6 +295,7 @@ class simulation(QMainWindow):
         self.timer_speed_slider.setValue(1)
         self.timer_speed_slider.setTickPosition(QSlider.TickPosition.TicksBelow)
         self.timer_speed_slider.setTickInterval(1)
+        self.timer_speed_slider.setFixedWidth(400)
 
         self.timer_speed_slider.valueChanged.connect(self.update_speed_factor)
 
@@ -361,10 +369,14 @@ class simulation(QMainWindow):
     def slow_process(self):
         self.graph.update_slow_processes(self.speed_factor)
         self.draw_synaptic_elements(*self.graph.update_synaptic_elements())
+        
+        # Every slow process synapses are getting drawn in grey
+        self.draw_synapses(self.graph.get_active_synapses())
 
 
     def fast_process(self):
         self.graph.update_fast_processes(self.speed_factor)
+        pass
 
 
     def display_time(self):
@@ -407,7 +419,7 @@ class simulation(QMainWindow):
 
         # Positions of the Neurons
         
-        pos = np.array([[n.x, n.y] for n in self.neurons])
+        pos = self.graph.neuron_positions
         
 
         # Types of the Neurons
@@ -426,7 +438,7 @@ class simulation(QMainWindow):
 
         # Plotting
 
-        self.network_graph.setData(pos=pos, pen=pg.mkPen(color=(150, 150, 150), width=2), size=25, symbol=symbols, symbolBrush=colors, symbolPen=None)
+        self.network_graph.setData(pos=pos, pen=pg.mkPen(color=(150, 150, 150), width=2), size=12, symbol=symbols, symbolBrush=colors, symbolPen=None, pxMode=False)
 
         self.draw_synaptic_elements(*self.graph.update_synaptic_elements())
         
@@ -437,6 +449,10 @@ class simulation(QMainWindow):
         self.ex_spines.setData(x = exc_x, y = exc_y)
         self.in_spines.setData(x = inh_x, y = inh_y)
 
+    def draw_synapses(self, active_synapses):
+        pos = self.graph.neuron_positions
+        adj = active_synapses
+        self.synapse_lines.setData(pos=pos, adj=active_synapses, pen=pg.mkPen(color=(120,120,120,100), width=1.5), size=0, symbol=None)
 
 
     # TODO Implement firing visualization

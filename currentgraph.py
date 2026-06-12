@@ -6,6 +6,8 @@ class currentgraph():
     def __init__(self, neuron_count: int, excitatory_probability: float = 0.8, inhibitory_probability: float = 0.2, exact_percentage: bool = True):
         self.network = Network(neuron_count, excitatory_probability, inhibitory_probability, exact_percentage)
         self.neurons = self.network.neurons
+        self.neuron_positions = np.array([[n.x, n.y] for n in self.neurons])
+        self.synapses = self.network.synapses
 
 
     
@@ -134,7 +136,16 @@ class currentgraph():
     def update_slow_processes(self, steps):
         for _ in range(steps):
             calc.structural_plasticity_step(self.network)
+
+        # Synapses are updated with every slow process (updates come from the network)
+        self.update_synapses()
         
     def update_fast_processes(self, steps):
         for _ in range(steps):
             calc.electrical_activity_step(self.network)
+
+    def update_synapses(self):
+        self.synapses = self.network.synapses
+
+    def get_active_synapses(self):
+        return self.network.get_connection_index()
