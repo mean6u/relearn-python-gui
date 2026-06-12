@@ -200,6 +200,7 @@ class Network:
         self.K = np.zeros((num_neurons, num_neurons), dtype=float)
         # functions as "from-to graph", entry equals count of synapses from this neuron to the other one
         
+
         self.synapses = np.zeros((num_neurons, num_neurons), dtype=bool)
         self.kernel = calc.calculate_distance_kernel(self, sigma=sigma_dist)
 
@@ -245,10 +246,10 @@ class Network:
     
 
     
-    def get_conction_index(self):
+    def get_connection_index(self):
         """returns the (from, to) index of all synapses"""
         return np.argwhere(self.synapses)
-    
+        
         
 
         

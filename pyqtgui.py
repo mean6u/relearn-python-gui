@@ -279,7 +279,7 @@ class simulation(QMainWindow):
         
         timer_speed_layout = QHBoxLayout()
 
-        self.timer_speed_txt = QLabel("Simulation Speed")
+        self.timer_speed_txt = QLabel("Simulation Speed: 1x")
         timer_speed_layout.addWidget(self.timer_speed_txt)
 
         self.timer_speed_slider = QSlider(Qt.Orientation.Horizontal)
@@ -288,6 +288,9 @@ class simulation(QMainWindow):
         self.timer_speed_slider.setValue(1)
         self.timer_speed_slider.setTickPosition(QSlider.TickPosition.TicksBelow)
         self.timer_speed_slider.setTickInterval(1)
+
+        self.timer_speed_slider.valueChanged.connect(self.update_speed_factor)
+
         timer_speed_layout.addWidget(self.timer_speed_slider)
 
         layout.addLayout(timer_speed_layout)
@@ -344,18 +347,20 @@ class simulation(QMainWindow):
         layout.addLayout(button_layout)
 
 
+    def update_speed_factor(self, value):
+        self.speed_factor = value
+        self.timer_speed_txt.setText(f"Simulation Speed: {value}x")
+
     def simulate_time_stamp(self):
-        self.elapsed_ms += 100 * self.speed_factor
+        for _ in range(int(self.speed_factor)):
+            self.elapsed_ms += 100
+        
         self.display_time()
 
 
     def slow_process(self):
         self.graph.update_slow_processes(self.speed_factor)
         self.draw_synaptic_elements(*self.graph.update_synaptic_elements())
-
-        
-
-
 
 
     def fast_process(self):
@@ -367,8 +372,7 @@ class simulation(QMainWindow):
         minutes = total_seconds // 60
         seconds = total_seconds % 60
         tenth_seconds = (self.elapsed_ms % 1000) // 100
-        # self.time_overlay.setText("Ös üs halt :/")
-        self.time_overlay.setText(f"{minutes:.2f}:{seconds:.2f}.{tenth_seconds:.1f}")
+        self.time_overlay.setText(f"{minutes:02d}:{seconds:02d}.{tenth_seconds:01d}")
 
 
     def rewind_time(self):
@@ -387,9 +391,13 @@ class simulation(QMainWindow):
     def toggle_simulation(self):
         if self.timer.isActive():
             self.timer.stop()
+            self.timer_slow.stop()
+            self.timer_fast.stop()
             self.timer_pause_btn.setText("►")
         else:
             self.timer.start()
+            self.timer_slow.start()
+            self.timer_fast.start()
             self.timer_pause_btn.setText("⏸")
 
 

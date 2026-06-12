@@ -34,11 +34,11 @@ class currentgraph():
 
 
         # Random Rotation Offset
-        offset = np.random.uniform(0, 2 * np.pi)
+        #offset = np.random.uniform(0, 2 * np.pi)
 
 
         # Angles for Synaptic Elements of one Neuron
-        angles = np.linspace(offset, offset + 2*np.pi, total_count, endpoint=False)
+        angles = np.linspace(0, 2*np.pi, total_count, endpoint=False)
 
         axon_angles = []
 

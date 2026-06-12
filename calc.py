@@ -84,7 +84,7 @@ def update_structural_elements(neuron, bound_A: int, bound_D_ex: int, bound_D_in
             #decay_acc_A (und auch decay_acc_D_ex, decay_acc_D_in) muss um den Anteil der Elemente reduziert werden, die in diesem schritt verfallen,
             #da sonst im nächsten Schritt wieder die gleiche Anzahl an Elementen verfallen würde, 
             #obwohl sie schon verfallen sind. 
-            neuron.decay_acc_A -= decayed
+            neuron.decay_acc_A -= decayed 
             neuron.A -= decayed
             neuron.vac_A -= decayed
 
@@ -136,9 +136,11 @@ def calculate_distance_kernel(network, sigma: float = 5.0 * 150.0) -> np.ndarray
 
 def electrical_activity_step(network):
     """Fast process: Wird alle 1 ms aufgerufen."""
+    #TODO soll über GUI veränderbar sein
     mu = 5.0
 
-    network.I_syn *= np.exp(-1.0 / mu) # Exponentieller Spannungsabfall von allen Neurohnen 
+    network.I_syn *= np.exp(-1.0 / mu) # Exponentieller Spannungsabfall von allen Neuronen 
+    # Es üs halt ein Giotto :/
 
     spiked_index = []
     for i, neuron in enumerate(network.neurons):
@@ -153,7 +155,7 @@ def electrical_activity_step(network):
         step_calcium(neuron)
         
     for i in spiked_index:
-        #addiere auf auf alle rausgehenden nurohnen die entsprechende spannung
+        #addiere auf auf alle rausgehenden neuronen die entsprechende spannung
         #TODO müssen wir die spannung noch gewichten???
         network.I_syn[network.get_outgoing_synapses(i)] += 1.0 if neuron.is_excitatory() else -1.0
 
@@ -186,13 +188,14 @@ def structural_plasticity_step(network):
             #Abbau-Aufträge merken
 
    
-    network.execute_deletions_of_synaptical_elements()
 
     #Zufälliges löschen von synapsen
-    conection = network.get_conction_index()
-    p = 1/len(conection)
-    random_delition_index = np.random.rand(len(conection)) < p
-    network.synapses[random_delition_index] = False
+    connection = network.get_connection_index()
+    num_connections = len(connection)
+    if num_connections != 0:
+        p = 1/ num_connections
+        random_delition_index = np.random.rand(num_connections) < p
+        network.synapses[random_delition_index] = False
 
 
     all_vacA = []
