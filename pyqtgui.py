@@ -179,6 +179,11 @@ class simulation(QMainWindow):
             neuron.A = 4
             neuron.D_ex = 6
             neuron.D_in = 6
+            
+            neuron.vac_A = 4
+            neuron.vac_D_ex = 6
+            neuron.vac_D_in = 6
+            
         
 
 

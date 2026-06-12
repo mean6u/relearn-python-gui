@@ -6,6 +6,7 @@ import math
 import numpy as np
 from objects import Neuron, NeuronType, Network
 import calc
+import time
 
 class TestNeuronDynamics(unittest.TestCase):
     
@@ -123,4 +124,18 @@ class TestNetworkTopology(unittest.TestCase):
         self.assertTrue(np.all((self.net.K >= 0.0) & (self.net.K <= 1.0)))
 
 if __name__ == '__main__':
-    unittest.main()
+    network = Network(5)
+    for n in network.get_neurons():
+        n.A = 10.0
+        n.D_ex = 10.0
+        n.D_in = 10.0
+
+        n.vac_A = 10
+        n.vac_D_ex = 10
+        n.vac_D_in = 10
+
+    while 1:
+        assignment = calc.check_assignment(network, calc.assign_vacant_elements(network))
+        print(len(assignment))
+        input("next: ")
+

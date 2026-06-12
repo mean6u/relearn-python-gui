@@ -246,7 +246,7 @@ class Network:
     
 
     
-    def get_connection_index(self):
+    def get_connection_indices(self):
         """returns the (from, to) index of all synapses"""
         return np.argwhere(self.synapses)
         
