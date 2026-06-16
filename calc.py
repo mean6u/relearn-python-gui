@@ -88,6 +88,8 @@ def update_structural_elements(neuron, bound_A: int, bound_D_ex: int, bound_D_in
             neuron.A -= decayed
             neuron.vac_A -= decayed
 
+    
+
     # Dendritic excitatory update
     if neuron.vac_D_ex > 0:
         neuron.decay_acc_D_ex += neuron.vac_D_ex / tau_vac
@@ -167,7 +169,10 @@ def delete_random_connection(network):
         p = 1 / num_connections
         random_deletion_indices = np.random.rand(num_connections) < p
         old_from, old_to = connection[random_deletion_indices].T
-        network.synapses[old_from, old_to] = False 
+        network.update_synapses(old_from, old_to, False)
+      
+
+             
 
 
 def structural_plasticity_step(network):
@@ -299,4 +304,4 @@ def check_assignment(network, assignments) -> list:
 def create_random_connection(network):
     potential_synapses = assign_vacant_elements(network)
     new_from, new_to = check_assignment(network, potential_synapses).T
-    network.synapses[new_from, new_to] = True
+    network.update_synapses(new_from, new_to, True)
