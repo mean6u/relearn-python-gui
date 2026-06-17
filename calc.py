@@ -88,6 +88,8 @@ def update_structural_elements(neuron, bound_A: int, bound_D_ex: int, bound_D_in
             neuron.A -= decayed
             neuron.vac_A -= decayed
 
+    
+
     # Dendritic excitatory update
     if neuron.vac_D_ex > 0:
         neuron.decay_acc_D_ex += neuron.vac_D_ex / tau_vac
@@ -159,7 +161,18 @@ def electrical_activity_step(network):
         #TODO müssen wir die spannung noch gewichten???
         network.I_syn[network.get_outgoing_synapses(i)] += 1.0 if neuron.is_excitatory() else -1.0
 
-         
+def delete_random_connection(network):
+    """Deletes a random connection from synapse-matrix"""
+    connection = network.get_connection_indices()
+    num_connections = len(connection)
+    if num_connections != 0:
+        p = 1 / num_connections
+        random_deletion_indices = np.random.rand(num_connections) < p
+        old_from, old_to = connection[random_deletion_indices].T
+        network.update_synapses(old_from, old_to, False)
+      
+
+             
 
 
 def structural_plasticity_step(network):
@@ -190,38 +203,15 @@ def structural_plasticity_step(network):
    
 
     #Zufälliges löschen von synapsen
-    connection = network.get_connection_index()
-    num_connections = len(connection)
-    if num_connections != 0:
-        p = 1/ num_connections
-        random_delition_index = np.random.rand(num_connections) < p
-        network.synapses[random_delition_index] = False
+    delete_random_connection(network)
 
+    # Creation of new synapses (via assign_vacant_elements and check_assignment)
+    create_random_connection(network)
 
-    all_vacA = []
-    all_D_ex = []
-    all_D_in = []
-    """
-    for i, neuron in enumerate(network.neurons):
-        #Herausfinden, wie viele Elemente aktuell gebunden sind
-    
-        bound_A = np.sum(network.get_outgoing_synapses(i)) # Ausgehende Synapsen (Spalte i)
-        
-        
-        bound_D_ex = np.sum(int(network.is_excitatory(i)) * network.get_incoming_synapses(i)) # Eingehend von exzitatorischen
-        bound_D_in = np.sum(int(network.is_inhibitory(i)) * network.get_incoming_synapses(i)) # Eingehend von inhibitorischen
-
-            # Das Neuron aktualisieren
-        update_structural_elements(neuron, bound_A, bound_D_ex, bound_D_in)
-            
-            #Abbau-Aufträge merken
-    """
-    # TODO Add creation of new synapses (via assign_vacant_elements and check_assignment)
 
     
 
-# Calculates synaptic connections among the neurons based on free synaptic elements and the
-# euclidean distance of the respective neurons
+# Proposes synaptic connections among the neurons based on free synaptic elements of the respective neurons
 def assign_vacant_elements(network) -> list:
     """
     Takes a network and returns a list of tuples. A tuple for a synapse from neuron a to neuron b is (a, b).
@@ -268,9 +258,9 @@ def assign_vacant_elements(network) -> list:
         free_d_ex[dendritic_neuron_index] -= 1
         sums["axonal excitatory"] -= 1
         sums["dendritic excitatory"] -= 1
- 
+         
     # Assigning inhibitory elements (axonal to dendritic)
-    while sums["axonal inhibitory"] != 0 and sums["dendritic inhibitory"] != 0:
+    while sums["axonal inhibitory"] > 0 and sums["dendritic inhibitory"] > 0:
         # Find random, vacant, inhibitory axonal element and the respective neuron
         chosen_axonal_element: int = random.randint(0, sums["axonal inhibitory"] - 1)
         for neuron_index in range(len(free_a_ex)):
@@ -294,6 +284,9 @@ def assign_vacant_elements(network) -> list:
         free_d_ex[dendritic_neuron_index] -= 1
         sums["axonal inhibitory"] -= 1
         sums["dendritic inhibitory"] -= 1
+    
+    total_neurons = assigned_excitatory + assigned_inhibitory
+    return total_neurons
 
 def check_assignment(network, assignments) -> list:
     """
@@ -304,4 +297,11 @@ def check_assignment(network, assignments) -> list:
         outgoing, incoming = neuron_pair
         if random.uniform(0, 1) < network.kernel[outgoing, incoming]:
             actual_synapses.append(neuron_pair)
-    return actual_synapses
+    print(actual_synapses)
+    return np.array(actual_synapses)
+
+
+def create_random_connection(network):
+    potential_synapses = assign_vacant_elements(network)
+    new_from, new_to = check_assignment(network, potential_synapses).T
+    network.update_synapses(new_from, new_to, True)

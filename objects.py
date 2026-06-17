@@ -54,6 +54,9 @@ class Neuron:
         self.decay_acc_D_ex = 0.0
         self.decay_acc_D_in = 0.0
         
+        self.out_synapses = []
+        self.in_synapses = []
+
         #gesamte mänge anliegender Spannung
         
 
@@ -67,6 +70,13 @@ class Neuron:
         return self.type
 
     # TODO import calc.py and use its formula
+
+    def get_outgoing_synapses(self):
+        return self.out_synapses
+    
+    def get_incoming_synapses(self):
+        return self.in_synapses
+    
 
     def step_electrical(self, I: float, dt:float = 1.0) -> bool:
         return calc.step_electrical(self, I, dt)
@@ -231,13 +241,31 @@ class Network:
         return self.synapses[neuron_index, :]
     
     
-    # should maybe only add 1 to the current value?
-    def update_synapses(self, x: int, y: int, value):
-        self.synapses[x, y] += value
-
-    def reset_synapse(self, x: int, y: int):
-        self.synapses[x, y] = 0
+    def update_synapses(self, _from: int | np.ndarray, to: int | np.ndarray, value: bool):
+        self.synapses[_from, to] = value
         
+
+        from_iter = np.atleast_1d(_from)
+        to_iter = np.atleast_1d(to)
+        
+        for f, t in zip(from_iter, to_iter):
+            f_idx, t_idx = int(f), int(t)
+            f_neuron = self.get_neuron_by_index(f_idx)
+            t_neuron = self.get_neuron_by_index(t_idx)
+            
+            if value:
+                if t_idx not in f_neuron.out_synapses:
+                    f_neuron.out_synapses.append(t_idx)
+                if f_idx not in t_neuron.in_synapses:
+                    t_neuron.in_synapses.append(f_idx)
+            else:
+                if t_idx in f_neuron.out_synapses:
+                    f_neuron.out_synapses.remove(t_idx)
+                if f_idx in t_neuron.in_synapses:
+                    t_neuron.in_synapses.remove(f_idx)
+
+    
+
     def calculate_distance_kernel(self, sigma: float = 5.0 * 150.0):
         calc.calculate_distance_kernel(self, sigma)
         
@@ -246,7 +274,7 @@ class Network:
     
 
     
-    def get_connection_index(self):
+    def get_connection_indices(self):
         """returns the (from, to) index of all synapses"""
         return np.argwhere(self.synapses)
         
