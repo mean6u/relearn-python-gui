@@ -54,8 +54,8 @@ class Neuron:
         self.decay_acc_D_ex = 0.0
         self.decay_acc_D_in = 0.0
         
-        self.out_synapses = []
-        self.in_synapses = []
+        #self.out_synapses = []
+        #self.in_synapses = []
 
         #gesamte mänge anliegender Spannung
         
@@ -71,11 +71,11 @@ class Neuron:
 
     # TODO import calc.py and use its formula
 
-    def get_outgoing_synapses(self):
-        return self.out_synapses
+    #def get_outgoing_synapses(self):
+    #    return self.out_synapses
     
-    def get_incoming_synapses(self):
-        return self.in_synapses
+    #def get_incoming_synapses(self):
+    #    return self.in_synapses
     
 
     def step_electrical(self, I: float, dt:float = 1.0) -> bool:
@@ -245,7 +245,7 @@ class Network:
         self.synapses[_from, to] = value
         
 
-        from_iter = np.atleast_1d(_from)
+        """from_iter = np.atleast_1d(_from)
         to_iter = np.atleast_1d(to)
         
         for f, t in zip(from_iter, to_iter):
@@ -262,7 +262,7 @@ class Network:
                 if t_idx in f_neuron.out_synapses:
                     f_neuron.out_synapses.remove(t_idx)
                 if f_idx in t_neuron.in_synapses:
-                    t_neuron.in_synapses.remove(f_idx)
+                    t_neuron.in_synapses.remove(f_idx)"""
 
     
 

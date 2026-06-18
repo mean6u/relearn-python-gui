@@ -67,10 +67,15 @@ def update_structural_elements(neuron, bound_A: int, bound_D_ex: int, bound_D_in
     #but when synaptic elements are deleted or used for synapse formation, the values of $A_j$, $D_i^{ex}$ and $D_i^{in}$ 
     #are rounded off to their smallest integer values.""""
 
+    new_A = int(neuron.A)
+    new_D_ex = int(neuron.D_ex)
+    new_D_in = int(neuron.D_in)
+
     #Equ. 8: 
-    neuron.vac_A = int(neuron.A) - bound_A
-    neuron.vac_D_ex = int(neuron.D_ex) - bound_D_ex
-    neuron.vac_D_in =  int(neuron.D_in) - bound_D_in
+    #Vakanzen dürfen nicht negativ werden
+    neuron.vac_A = max(0, new_A - bound_A)
+    neuron.vac_D_ex = max(0, new_D_ex - bound_D_ex)
+    neuron.vac_D_in =  max(0, new_D_in - bound_D_in)
 
     #Equ. 5: Deterministischer Zerfall ungenutzter Vakanzen
     tau_vac = 10.0
@@ -112,11 +117,14 @@ def update_structural_elements(neuron, bound_A: int, bound_D_ex: int, bound_D_in
     #For example, if neuron j had previously 100 axonal elements bound in 100 outgoing
     #synapses [...] and $A_j$ decreased to e.g. 95.32 due to Eq. 4, $A_j$ is rounded off to 95 and 
     #consequently neuron j has to delete $\Delta A_j$ outgoing synapses at the next update in connectivity.
-    #delta_A = int(neuron.A) - old_A
-    #delta_D_ex = int(neuron.D_ex) - old_D_ex
-    #delta_D_in = int(neuron.D_in) - old_D_in
+
+    # Deltas berechnen. Wie viele gebundenen Synapsen müssen abgebaut werden
+    # Das passiert, wenn die neue Gesamtanzahl unter die bereits gebundenen fällt.
+    delta_A = max(0, new_A - bound_A)
+    delta_D_ex = max(0, bound_D_ex - new_D_ex)
+    delta_D_in = max(0, bound_D_in - new_D_in)
     
-    #return delta_A, delta_D_ex, delta_D_in
+    return delta_A, delta_D_ex, delta_D_in
 
 # TODO change all occurrences of sigma to 5.0 * 150 * 10^-6? Because it's micrometers
 def calculate_kernel_value(neuron_out, neuron_in, sigma: float = 5.0 * 150.0):
@@ -161,27 +169,65 @@ def electrical_activity_step(network):
         #TODO müssen wir die spannung noch gewichten???
         network.I_syn[network.get_outgoing_synapses(i)] += 1.0 if neuron.is_excitatory() else -1.0
 
-def delete_random_connection(network):
-    """Deletes a random connection from synapse-matrix"""
-    connection = network.get_connection_indices()
-    num_connections = len(connection)
-    if num_connections != 0:
-        p = 1 / num_connections
-        random_deletion_indices = np.random.rand(num_connections) < p
-        old_from, old_to = connection[random_deletion_indices].T
-        network.update_synapses(old_from, old_to, False)
-      
 
+      
+def execute_deletions(network, deletion_requests):
+
+    for neuron_idx, d_A, d_D_ex, d_D_in in deletion_requests:
+        neuron = network.get_neuron_by_index(neuron_idx)
+
+        # 1. Axonale Löschungen (Das Neuron verliert ausgehende Stecker)
+        if d_A > 0:
+            out_synapses = neuron.get_outgoing_synapses()
+            if len(out_synapses) > 0:
+                # Wähle zufällig d_A Ziele aus, zu denen die Verbindung gekappt wird
+                targets_to_drop = random.sample(out_synapses, min(d_A, len(out_synapses)))
+                
+                for target_idx in targets_to_drop:
+                    network.update_synapses(neuron_idx, target_idx, False)
+                    
+                    # Dem Ziel-Neuron bleibt seine Steckdose erhalten -> Vakanz steigt!
+                    target_neuron = network.get_neuron_by_index(target_idx)
+                    if neuron.is_excitatory():
+                        target_neuron.vac_D_ex += 1
+                    else:
+                        target_neuron.vac_D_in += 1
+
+        # 2. Exzitatorische Dendriten-Löschungen (Das Neuron verliert eingehende Verbindungen von exzitatorischen Quellen)
+        if d_D_ex > 0:
+            in_synapses = neuron.get_incoming_synapses()
+            # Filtere nach Quellen, die exzitatorisch sind
+            ex_sources = [src for src in in_synapses if network.get_neuron_by_index(src).is_excitatory()]
+            if len(ex_sources) > 0:
+                sources_to_drop = random.sample(ex_sources, min(d_D_ex, len(ex_sources)))
+                
+                for src_idx in sources_to_drop:
+                    network.update_synapses(src_idx, neuron_idx, False)
+                    # Der Quelle bleibt der Stecker erhalten -> Vakanz steigt!
+                    network.get_neuron_by_index(src_idx).vac_A += 1
+
+        # 3. Inhibitorische Dendriten-Löschungen (Das Neuron verliert eingehende Verbindungen von inhibitorischen Quellen)
+        if d_D_in > 0:
+            in_synapses = neuron.get_incoming_synapses()
+            # Filtere nach Quellen, die inhibitorisch sind
+            in_sources = [src for src in in_synapses if network.get_neuron_by_index(src).is_inhibitory()]
+            if len(in_sources) > 0:
+                sources_to_drop = random.sample(in_sources, min(d_D_in, len(in_sources)))
+                
+                for src_idx in sources_to_drop:
+                    network.update_synapses(src_idx, neuron_idx, False)
+                    # Der Quelle bleibt der Stecker erhalten -> Vakanz steigt!
+                    network.get_neuron_by_index(src_idx).vac_A += 1
              
 
 
 def structural_plasticity_step(network):
     """Slow process: Wird alle 100 ms aufgerufen."""
     # Deletion of synaptic elements?
-    # deletions = []
+    deletion_requests = []
 
 
-    #TODO make more efficient (store number of bound synaptic elements in variable^)
+    
     for i, neuron in enumerate(network.neurons):
         #Herausfinden, wie viele Elemente aktuell gebunden sind
         
@@ -196,14 +242,12 @@ def structural_plasticity_step(network):
         else:
             bound_D_in = 0
             # Das Neuron aktualisieren
-        update_structural_elements(neuron, bound_A, bound_D_ex, bound_D_in)
-            
-            #Abbau-Aufträge merken
+        delta_A, delta_D_ex, delta_D_in = update_structural_elements(neuron, bound_A, bound_D_ex, bound_D_in)
+        if delta_A > 0 or delta_D_ex > 0 or delta_D_in > 0:
+            deletion_requests.append((i, delta_A, delta_D_ex, delta_D_in))
+    
 
-   
-
-    #Zufälliges löschen von synapsen
-    delete_random_connection(network)
+    execute_deletions(network, deletion_requests)
 
     # Creation of new synapses (via assign_vacant_elements and check_assignment)
     create_random_connection(network)
