@@ -230,7 +230,7 @@ def execute_deletions(network, deletion_requests):
 
 
 def structural_plasticity_step(network):
-    # TODO Does not seem to work (no synaptic elements are created)
+    # TODO Does not seem to work (few synaptic elements are created)
     """Slow process: Wird alle 100 ms aufgerufen."""
     # Deletion of synaptic elements?
     deletion_requests = []
