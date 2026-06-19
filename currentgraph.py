@@ -148,4 +148,4 @@ class currentgraph():
         self.synapses = self.network.synapses
 
     def get_active_synapses(self):
-        return self.network.get_connection_index()
+        return self.network.get_connection_indices()

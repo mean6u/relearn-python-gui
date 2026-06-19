@@ -211,7 +211,7 @@ class Network:
         # functions as "from-to graph", entry equals count of synapses from this neuron to the other one
         
 
-        self.synapses = np.zeros((num_neurons, num_neurons), dtype=bool)
+        self.synapses = np.zeros((num_neurons, num_neurons), dtype=int)
         self.kernel = calc.calculate_distance_kernel(self, sigma=sigma_dist)
 
 
@@ -234,21 +234,36 @@ class Network:
         return self.neurons[index]
     
 
-    def get_outgoing_synapses(self, neuron_index: int):
+    def get_incoming_synapses(self, neuron_index: int):
         return self.synapses[:, neuron_index]
     
-    def get_incoming_synapses(self, neuron_index: int):
+    def get_outgoing_synapses(self, neuron_index: int):
         return self.synapses[neuron_index, :]
     
     
-    def update_synapses(self, _from: int | np.ndarray, to: int | np.ndarray, value: bool):
-        self.synapses[_from, to] = value
-        
+    def update_synapses(self, _from: int | np.ndarray, to: int | np.ndarray, change_value: int):
+        # Update synapses array of the network
+        self.synapses[_from, to] += change_value
 
-        """from_iter = np.atleast_1d(_from)
+        # Converting “from” and “to” list to arrays
+        from_iter = np.atleast_1d(_from)
         to_iter = np.atleast_1d(to)
         
-        for f, t in zip(from_iter, to_iter):
+        # Update vacant counter variable of the respective neurons
+        for from_idx, to_idx in zip(from_iter, to_iter):
+            sender = self.neurons[from_idx]
+            receiver = self.neurons[to_idx]
+
+            # Update for sender
+            sender.vac_A -= change_value
+
+            # Update for receiver
+            if sender.is_excitatory():
+                receiver.vac_D_ex -= change_value
+            else:
+                receiver.vac_D_in -= change_value
+
+        """for f, t in zip(from_iter, to_iter):
             f_idx, t_idx = int(f), int(t)
             f_neuron = self.get_neuron_by_index(f_idx)
             t_neuron = self.get_neuron_by_index(t_idx)
@@ -276,7 +291,7 @@ class Network:
     
     def get_connection_indices(self):
         """returns the (from, to) index of all synapses"""
-        return np.argwhere(self.synapses)
+        return np.argwhere(self.synapses != 0)
         
         
 

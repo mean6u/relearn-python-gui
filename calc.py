@@ -165,9 +165,17 @@ def electrical_activity_step(network):
         step_calcium(neuron)
         
     for i in spiked_index:
+        neuron = network.get_neuron_by_index(i)
+        voltage_change = 1.0 if neuron.is_excitatory() else -1.0
+        outgoing_count = network.get_outgoing_synapses(i)
+        network.I_syn += outgoing_count * voltage_change
+        """
         #addiere auf auf alle rausgehenden neuronen die entsprechende spannung
         #TODO müssen wir die spannung noch gewichten???
+        neuron = network.get_neuron_by_index(i)
+
         network.I_syn[network.get_outgoing_synapses(i)] += 1.0 if neuron.is_excitatory() else -1.0
+        """
 
 
       
@@ -176,12 +184,12 @@ def execute_deletions(network, deletion_requests):
     for neuron_idx, d_A, d_D_ex, d_D_in in deletion_requests:
         neuron = network.get_neuron_by_index(neuron_idx)
 
-        # 1. Axonale Löschungen (Das Neuron verliert ausgehende Stecker)
+        #Axonale Löschungen (Das Neuron verliert ausgehende Stecker)
         if d_A > 0:
-            out_synapses = neuron.get_outgoing_synapses()
+            out_synapses = network.get_outgoing_synapses(neuron_idx)
             if len(out_synapses) > 0:
                 # Wähle zufällig d_A Ziele aus, zu denen die Verbindung gekappt wird
-                targets_to_drop = random.sample(out_synapses, min(d_A, len(out_synapses)))
+                targets_to_drop = random.sample(sorted(out_synapses), min(d_A, len(out_synapses)))
                 
                 for target_idx in targets_to_drop:
                     network.update_synapses(neuron_idx, target_idx, False)
@@ -193,35 +201,36 @@ def execute_deletions(network, deletion_requests):
                     else:
                         target_neuron.vac_D_in += 1
 
-        # 2. Exzitatorische Dendriten-Löschungen (Das Neuron verliert eingehende Verbindungen von exzitatorischen Quellen)
+        #Exzitatorische Dendriten-Löschungen (Das Neuron verliert eingehende Verbindungen von exzitatorischen Quellen)
         if d_D_ex > 0:
-            in_synapses = neuron.get_incoming_synapses()
+            in_synapses = network.get_incoming_synapses(neuron_idx)
             # Filtere nach Quellen, die exzitatorisch sind
             ex_sources = [src for src in in_synapses if network.get_neuron_by_index(src).is_excitatory()]
             if len(ex_sources) > 0:
                 sources_to_drop = random.sample(ex_sources, min(d_D_ex, len(ex_sources)))
                 
                 for src_idx in sources_to_drop:
-                    network.update_synapses(src_idx, neuron_idx, False)
+                    network.update_synapses(src_idx, neuron_idx, -1)
                     # Der Quelle bleibt der Stecker erhalten -> Vakanz steigt!
                     network.get_neuron_by_index(src_idx).vac_A += 1
 
-        # 3. Inhibitorische Dendriten-Löschungen (Das Neuron verliert eingehende Verbindungen von inhibitorischen Quellen)
+        #Inhibitorische Dendriten-Löschungen (Das Neuron verliert eingehende Verbindungen von inhibitorischen Quellen)
         if d_D_in > 0:
-            in_synapses = neuron.get_incoming_synapses()
+            in_synapses = network.get_incoming_synapses(neuron_idx)
             # Filtere nach Quellen, die inhibitorisch sind
             in_sources = [src for src in in_synapses if network.get_neuron_by_index(src).is_inhibitory()]
             if len(in_sources) > 0:
                 sources_to_drop = random.sample(in_sources, min(d_D_in, len(in_sources)))
                 
                 for src_idx in sources_to_drop:
-                    network.update_synapses(src_idx, neuron_idx, False)
+                    network.update_synapses(src_idx, neuron_idx, -1)
                     # Der Quelle bleibt der Stecker erhalten -> Vakanz steigt!
                     network.get_neuron_by_index(src_idx).vac_A += 1
              
 
 
 def structural_plasticity_step(network):
+    # TODO Does not seem to work (no synaptic elements are created)
     """Slow process: Wird alle 100 ms aufgerufen."""
     # Deletion of synaptic elements?
     deletion_requests = []
@@ -247,19 +256,19 @@ def structural_plasticity_step(network):
             deletion_requests.append((i, delta_A, delta_D_ex, delta_D_in))
     
 
+    create_random_connection(network)
     execute_deletions(network, deletion_requests)
 
     # Creation of new synapses (via assign_vacant_elements and check_assignment)
-    create_random_connection(network)
-
+    #create_random_connection(network)
 
     
 
 # Proposes synaptic connections among the neurons based on free synaptic elements of the respective neurons
 def assign_vacant_elements(network) -> list:
     """
-    Takes a network and returns a list of tuples. A tuple for a synapse from neuron a to neuron b is (a, b).
-    """
+    # Takes a network and returns a list of tuples. A tuple for a synapse from neuron a to neuron b is (a, b).
+"""
     # Storing the free synaptic elements for each neuron (index i is the respective number of free element for the i-th neuron)
     free_a_ex = [neuron.vac_A if neuron.is_excitatory() else 0 
                  for neuron in network.neurons]
@@ -283,7 +292,7 @@ def assign_vacant_elements(network) -> list:
         chosen_axonal_element: int = random.randint(0, sums["axonal excitatory"] - 1)
         for neuron_index in range(len(free_a_ex)):
             chosen_axonal_element -= free_a_ex[neuron_index]
-            if chosen_axonal_element < 1:
+            if chosen_axonal_element < 0:
                 # We got the neuron index (stored in axonal_neuron_index)
                 axonal_neuron_index = neuron_index
                 break
@@ -291,7 +300,7 @@ def assign_vacant_elements(network) -> list:
         chosen_dendritic_element: int = random.randint(0, sums["dendritic excitatory"] - 1)
         for neuron_index in range(len(free_d_ex)):
             chosen_dendritic_element -= free_d_ex[neuron_index]
-            if chosen_dendritic_element < 1:
+            if chosen_dendritic_element < 0:
                 # We got the neuron index (stored in dendritic_neuron_index)
                 dendritic_neuron_index = neuron_index
                 break
@@ -307,45 +316,49 @@ def assign_vacant_elements(network) -> list:
     while sums["axonal inhibitory"] > 0 and sums["dendritic inhibitory"] > 0:
         # Find random, vacant, inhibitory axonal element and the respective neuron
         chosen_axonal_element: int = random.randint(0, sums["axonal inhibitory"] - 1)
-        for neuron_index in range(len(free_a_ex)):
-            chosen_axonal_element -= free_a_ex[neuron_index]
-            if chosen_axonal_element < 1:
+        for neuron_index in range(len(free_a_in)):
+            chosen_axonal_element -= free_a_in[neuron_index]
+            if chosen_axonal_element < 0:
                 # We got the neuron index (stored in axonal_neuron_index)
                 axonal_neuron_index = neuron_index
                 break
         # Find random, vacant, inhibitory dendritic element and the respective neuron
         chosen_dendritic_element: int = random.randint(0, sums["dendritic inhibitory"] - 1)
-        for neuron_index in range(len(free_d_ex)):
-            chosen_dendritic_element -= free_d_ex[neuron_index]
-            if chosen_dendritic_element < 1:
+        for neuron_index in range(len(free_d_in)):
+            chosen_dendritic_element -= free_d_in[neuron_index]
+            if chosen_dendritic_element < 0:
                 # We got the neuron index (stored in dendritic_neuron_index)
                 dendritic_neuron_index = neuron_index
                 break
         # Adding connection to list
         assigned_inhibitory.append((axonal_neuron_index, dendritic_neuron_index))
         # Adjusting values
-        free_a_ex[axonal_neuron_index] -= 1
-        free_d_ex[dendritic_neuron_index] -= 1
+        free_a_in[axonal_neuron_index] -= 1
+        free_d_in[dendritic_neuron_index] -= 1
         sums["axonal inhibitory"] -= 1
         sums["dendritic inhibitory"] -= 1
     
     total_neurons = assigned_excitatory + assigned_inhibitory
     return total_neurons
 
+
 def check_assignment(network, assignments) -> list:
     """
-    Takes a list of potential connections and returns a list of synapses to be established based on the euclidean distance.
-    """
+    # Takes a list of potential connections and returns a list of synapses to be established based on the euclidean distance.
+"""
     actual_synapses: list = []
     for neuron_pair in assignments:
         outgoing, incoming = neuron_pair
         if random.uniform(0, 1) < network.kernel[outgoing, incoming]:
             actual_synapses.append(neuron_pair)
-    print(actual_synapses)
+    # print(actual_synapses)
     return np.array(actual_synapses)
 
 
 def create_random_connection(network):
     potential_synapses = assign_vacant_elements(network)
-    new_from, new_to = check_assignment(network, potential_synapses).T
-    network.update_synapses(new_from, new_to, True)
+    assigments = check_assignment(network, potential_synapses)
+    if len(assigments) == 0:
+        return
+    new_from, new_to = assigments.T
+    network.update_synapses(new_from, new_to, 1)

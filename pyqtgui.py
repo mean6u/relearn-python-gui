@@ -163,7 +163,7 @@ class simulation(QMainWindow):
 
 
         # Initialising currentgraph
-        
+        # TODO Seems to fail when entering 500 for the number of neurons (in the launcher)
         self.graph = currentgraph(neuron_count, exc_count/100, (100-exc_count)/100)
         self.neurons = self.graph.neurons
 
@@ -175,7 +175,7 @@ class simulation(QMainWindow):
 
         # Test
         # TODO Remove
-        for neuron in self.neurons:
+        """for neuron in self.neurons:
             neuron.A = 4
             neuron.D_ex = 6
             neuron.D_in = 6
@@ -183,6 +183,16 @@ class simulation(QMainWindow):
             neuron.vac_A = 4
             neuron.vac_D_ex = 6
             neuron.vac_D_in = 6
+        """
+        for neuron in self.neurons:
+            neuron.A = 0
+            neuron.D_ex = 0
+            neuron.D_in = 0
+
+            neuron.vac_A = 0
+            neuron.vac_D_ex = 0
+            neuron.vac_D_in = 0
+
         
         self.graph.network.synapses[0, 1] = True
 
@@ -452,7 +462,7 @@ class simulation(QMainWindow):
     def draw_synapses(self, active_synapses):
         pos = self.graph.neuron_positions
         adj = active_synapses
-        self.synapse_lines.setData(pos=pos, adj=active_synapses, pen=pg.mkPen(color=(120,120,120,100), width=1.5), size=0, symbol=None)
+        self.synapse_lines.setData(pos=pos, adj=active_synapses, pen=pg.mkPen(color=(120,120,120,100), width=1.5), size=0, symbol='o')
 
 
     # TODO Implement firing visualization
