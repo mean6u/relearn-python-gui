@@ -365,6 +365,137 @@ class simulation(QMainWindow):
         layout.addLayout(button_layout)
 
 
+
+        # Container for the collapsible controls
+        self.controls_container = QWidget()
+        controls_layout = QVBoxLayout(self.controls_container)
+        controls_layout.setContentsMargins(0, 0, 0, 0) # Remove margins for a compact view
+
+        # Button to toggle controls
+        self.toggle_controls_btn = QPushButton("▶ Expand Parameters")
+        self.toggle_controls_btn.setCheckable(True)
+        self.toggle_controls_btn.setChecked(True) # Startet eingeklappt
+        self.toggle_controls_btn.setStyleSheet("background-color: #333333; color: white; padding: 5px; border-radius: 3px;")
+        self.toggle_controls_btn.clicked.connect(self.toggle_controls)
+        
+        layout.addWidget(self.toggle_controls_btn)
+        layout.addWidget(self.controls_container)
+
+        self.I_ext_label = QLabel(f"External Input (I_ext_mean): {self.graph.network.I_ext_mean:.1f} mV/ms")
+        self.I_ext_slider = QSlider(Qt.Orientation.Horizontal)
+        self.I_ext_slider.setMinimum(0)   # Corresponds to 0.0 mV/ms
+        self.I_ext_slider.setMaximum(150) # Corresponds to 15.0 mV/ms
+        self.I_ext_slider.valueChanged.connect(self.update_I_ext_mean)
+        controls_layout.addWidget(self.I_ext_label)
+        controls_layout.addWidget(self.I_ext_slider)
+        self.I_ext_slider.setValue(int(self.graph.network.I_ext_mean * 10))
+
+        self.v_label = QLabel(f"Growth Rate (v): {self.graph.network.v:.4f}")
+        self.v_slider = QSlider(Qt.Orientation.Horizontal)
+        self.v_slider.setMinimum(1)
+        self.v_slider.setMaximum(500)
+        self.v_slider.setValue(int(self.graph.network.v * 10000))
+        self.v_slider.valueChanged.connect(self.update_v)
+        controls_layout.addWidget(self.v_label)
+        controls_layout.addWidget(self.v_slider)
+
+        self.eps_label = QLabel(f"Stress Set-Point (epsilon): {self.graph.network.epsilon:.2f}")
+        self.eps_slider = QSlider(Qt.Orientation.Horizontal)
+        self.eps_slider.setMinimum(30)   
+        self.eps_slider.setMaximum(150)  
+        self.eps_slider.setValue(int(self.graph.network.epsilon * 100))
+        self.eps_slider.valueChanged.connect(self.update_epsilon)
+        controls_layout.addWidget(self.eps_label)
+        controls_layout.addWidget(self.eps_slider)
+
+        # 4. Slider for Calcium Decay (Tau_Ca)
+        self.tau_label = QLabel(f"Calcium Decay (tau_Ca): {self.graph.network.tau_ca:.0f} ms")
+        self.tau_slider = QSlider(Qt.Orientation.Horizontal)
+        self.tau_slider.setMinimum(100)   # Corresponds to 1000 ms
+        self.tau_slider.setMaximum(1500)  # Corresponds to 15000 ms
+        self.tau_slider.setValue(int(self.graph.network.tau_ca))
+        self.tau_slider.valueChanged.connect(self.update_tau_ca)
+        controls_layout.addWidget(self.tau_label)
+        controls_layout.addWidget(self.tau_slider)
+
+        # 5. Slider for Distance Kernel (Sigma)
+        self.sigma_label = QLabel(f"Kernel Range (Sigma): {self.graph.network.sigma:.0f} µm")
+        self.sigma_slider = QSlider(Qt.Orientation.Horizontal)
+        self.sigma_slider.setMinimum(2)   # Corresponds to 100
+        self.sigma_slider.setMaximum(50)  # Corresponds to 2500
+        self.sigma_slider.setValue(int(self.graph.network.sigma / 50))
+        self.sigma_slider.valueChanged.connect(self.update_sigma)
+        controls_layout.addWidget(self.sigma_label)
+        controls_layout.addWidget(self.sigma_slider)
+
+        # 6. Slider for eta_A (Axon)
+        self.eta_a_label = QLabel(f"Optimal Ca for Axons (eta_A): {self.graph.network.eta_A:.2f}")
+        self.eta_a_slider = QSlider(Qt.Orientation.Horizontal)
+        self.eta_a_slider.setMinimum(10)  # Corresponds to 0.1
+        self.eta_a_slider.setMaximum(80)   # Corresponds to 0.8
+        self.eta_a_slider.setValue(int(self.graph.network.eta_A * 100))
+        self.eta_a_slider.valueChanged.connect(self.update_eta_a)
+        controls_layout.addWidget(self.eta_a_label)
+        controls_layout.addWidget(self.eta_a_slider)
+
+        # 7. Slider for eta_D (Dendrite)
+        self.eta_d_label = QLabel(f"Optimal Ca for Dendrites (eta_D): {self.graph.network.eta_D:.2f}")
+        self.eta_d_slider = QSlider(Qt.Orientation.Horizontal)
+        self.eta_d_slider.setMinimum(0)   # Corresponds to 0.0
+        self.eta_d_slider.setMaximum(50)  # Corresponds to 0.5
+        self.eta_d_slider.setValue(int(self.graph.network.eta_D * 100))
+        self.eta_d_slider.valueChanged.connect(self.update_eta_d)
+        controls_layout.addWidget(self.eta_d_label)
+        controls_layout.addWidget(self.eta_d_slider)
+        
+        self.toggle_controls(True) # Hide widget initially
+        
+
+    def toggle_controls(self, checked):
+        if checked:
+            self.controls_container.setVisible(False)
+            self.toggle_controls_btn.setText("▶ Expand Parameters")
+        else:
+            self.controls_container.setVisible(True)
+            self.toggle_controls_btn.setText("▼ Collapse Parameters")
+
+    def update_I_ext_mean(self, value):
+        val = value / 10.0
+        self.graph.network.I_ext_mean = val
+        self.I_ext_label.setText(f"External Input (I_ext_mean): {val:.1f} mV/ms")
+
+    def update_v(self, value):
+        val = value / 10000.0
+        self.graph.network.v = val
+        
+        self.v_label.setText(f"Growth Rate (v): {val:.4f}")
+
+    def update_epsilon(self, value):
+        float_val = value / 100.0
+        self.graph.network.epsilon = float_val
+        self.eps_label.setText(f"Stress Set-Point (epsilon): {float_val:.2f}")
+
+    def update_tau_ca(self, value):
+        val = float(value*10)
+        self.graph.network.tau_ca = val
+        self.tau_label.setText(f"Calcium Decay (tau_Ca): {val:.0f} ms")
+
+    def update_sigma(self, value):
+        val = value * 50
+        self.graph.network.sigma = val
+        self.sigma_label.setText(f"Kernel Range (Sigma): {val:.0f} µm")
+        self.graph.network.kernel = self.graph.network.calculate_distance_kernel(sigma=val)
+
+    def update_eta_a(self, value):
+        val = value / 100.0
+        self.graph.network.eta_A = val
+        self.eta_a_label.setText(f"Optimal Ca for Axons (eta_A): {val:.2f}")
+
+    def update_eta_d(self, value):
+        val = value / 100.0
+        self.graph.network.eta_D = val
+        self.eta_d_label.setText(f"Optimal Ca for Dendrites (eta_D): {val:.2f}")
+
     def update_speed_factor(self, value):
         self.speed_factor = value
         self.timer_speed_txt.setText(f"Simulation Speed: {value}x")

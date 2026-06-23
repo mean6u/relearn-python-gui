@@ -37,9 +37,9 @@ def step_electrical(neuron, I: float, dt:float = 1.0) -> bool:
 
     return has_spiked
     
-def step_calcium(neuron, dt: float = 1.0):
+def step_calcium(neuron, tau_ca: float = 10000.0, dt: float = 1.0):
     """Eq. 3"""
-    dCa_dt = -(neuron.calcium_level / neuron.tau_ca)
+    dCa_dt = -(neuron.calcium_level / tau_ca)
     neuron.calcium_level += dCa_dt*dt
 
 def calculate_growth_rate(neuron, eta: float, epsilon: float = 0.7, v: float = 0.0001) -> float:
@@ -53,7 +53,7 @@ def calculate_growth_rate(neuron, eta: float, epsilon: float = 0.7, v: float = 0
 
 
 
-def update_structural_elements(neuron, bound_A: int, bound_D_ex: int, bound_D_in: int, dt: float = 100.0):
+def update_structural_elements(neuron, bound_A: int, bound_D_ex: int, bound_D_in: int, v: float, epsilon: float, eta_A: float = 0.4, eta_D: float = 0.1, dt: float = 100.0):
     """
     This method models the slow processes.
     """
@@ -62,10 +62,9 @@ def update_structural_elements(neuron, bound_A: int, bound_D_ex: int, bound_D_in
     #Because $\eta_D = 0.1$ and $\eta_A = 0.4$ lead to network recovery, we compare the results
     #obtained with these values with the experimental data.
   
-
-    neuron.A = max(0.0, neuron.A + calculate_growth_rate(neuron, eta=0.4, v=0.001) * dt)
-    neuron.D_ex = max(0.0, neuron.D_ex + calculate_growth_rate(neuron, eta=0.1, v=0.001) * dt)
-    neuron.D_in = max(0.0, neuron.D_in + calculate_growth_rate(neuron, eta=0.1, v=0.001) * dt)
+    neuron.A = max(0.0, neuron.A + calculate_growth_rate(neuron, eta=eta_A, epsilon=epsilon,v=v) * dt)
+    neuron.D_ex = max(0.0, neuron.D_ex + calculate_growth_rate(neuron, eta=eta_D, epsilon=epsilon, v=v) * dt)
+    neuron.D_in = max(0.0, neuron.D_in + calculate_growth_rate(neuron, eta=eta_D, epsilon=epsilon, v=v) * dt)
     
    # neuron.A += max(0.0, calculate_growth_rate(neuron, eta=0.4) * dt)
     #neuron.D_ex += max(0, calculate_growth_rate(neuron, eta=0.1) * dt)
@@ -166,14 +165,14 @@ def electrical_activity_step(network):
     spiked_index = []
     for i, neuron in enumerate(network.neurons):
         #Hintergruund aktivität wird nach paiper so berechnet
-        I_ext = np.random.normal(6.0, 1.0)
+        I_ext = np.random.normal(network.I_ext_mean, 1.0)
         I_total = I_ext + network.I_syn[i]
 
         #feuer frei!!!
         if step_electrical(neuron, I_total):
             spiked_index.append(i)
                      
-        step_calcium(neuron)
+        step_calcium(neuron, network.tau_ca)
         
     for i in spiked_index:
         neuron = network.get_neuron_by_index(i)
@@ -260,7 +259,7 @@ def structural_plasticity_step(network):
         bound_D_ex, bound_D_in = network.get_bound_dendrites(neuron_index)
 
         # Das Neuron aktualisieren
-        delta_A, delta_D_ex, delta_D_in = update_structural_elements(neuron, bound_A, bound_D_ex, bound_D_in)
+        delta_A, delta_D_ex, delta_D_in = update_structural_elements(neuron, bound_A, bound_D_ex, bound_D_in, network.v, network.epsilon, network.eta_A, network.eta_D)
         if delta_A > 0 or delta_D_ex > 0 or delta_D_in > 0:
             deletion_requests.append((neuron_index, delta_A, delta_D_ex, delta_D_in))
     
@@ -361,7 +360,6 @@ def check_assignment(network, assignments) -> list:
         outgoing, incoming = neuron_pair
         if random.uniform(0, 1) < network.kernel[outgoing, incoming]:
             actual_synapses.append(neuron_pair)
-    # print(actual_synapses)
     return np.array(actual_synapses)
 
 

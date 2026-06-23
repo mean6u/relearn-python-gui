@@ -22,7 +22,6 @@ class Neuron:
         self.u = 0.0    # Membrane recovery variable
 
         self.calcium_level = 0  # Calcium level of neuron
-        self.tau_ca = 10000.0   # Decay time of calcium level (decreases exponentially to zero)
         self.beta = 0.001       # Increase in calcium every time the neuron fires
 
         #Ein exzitatorisches Neuron kann nur exzitatorische Stecker bilden, 
@@ -106,11 +105,21 @@ class Synapse:
         self.id = id
 
 class Network:
-    def __init__(self, num_neurons: int, excitatory_probability: float = 0.8, inhibitory_probability: float = 0.2, exact_percentage: bool = True, sigma_dist: float = 5.0 * 150.0):
+    def __init__(self, num_neurons: int, excitatory_probability: float = 0.8, inhibitory_probability: float = 0.2, exact_percentage: bool = True):
         self.neurons = []
         self.excitatory = []
         self.inhibitory = []
         self.num_neurons = num_neurons
+
+        #Kontrollparameter die von der UI gesteuert werden
+        self.v = 0.0001
+        self.I_ext_mean = 5.0
+        self.epsilon = 0.7       
+        self.tau_ca = 10000.0    
+        self.sigma = 750.0
+        self.eta_A = 0.4
+        self.eta_D = 0.1
+
 
         #gesamt anliegende spannung aller Neuronen
         self.I_syn = np.zeros(num_neurons, dtype=float) 
@@ -210,7 +219,7 @@ class Network:
                 
 
         self.synapses = np.zeros((num_neurons, num_neurons), dtype=int)
-        self.kernel = calc.calculate_distance_kernel(self, sigma=sigma_dist)
+        self.kernel = self.calculate_distance_kernel(sigma=self.sigma)
 
 
     def get_neurons(self):
@@ -303,7 +312,7 @@ class Network:
     
 
     def calculate_distance_kernel(self, sigma: float = 5.0 * 150.0):
-        calc.calculate_distance_kernel(self, sigma)
+        return calc.calculate_distance_kernel(self, sigma)
         
     def structural_plasticity_step(self):
         calc.structural_plasticity_step(self)
