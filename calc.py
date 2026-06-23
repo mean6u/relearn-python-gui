@@ -24,6 +24,9 @@ def step_electrical(neuron, I: float, dt:float = 1.0) -> bool:
     neuron.v += dv_dt*dt
     neuron.u += du_dt*dt
     
+    # -100.0 als absoluter Tiefpunkt, 35.0 als Obergrenze (knapp über Spike-Schwelle).
+    neuron.v = max(-100.0, min(neuron.v, 35.0))
+
     has_spiked = False
 
     if neuron.v >= 30.0:
@@ -59,9 +62,9 @@ def update_structural_elements(neuron, bound_A: int, bound_D_ex: int, bound_D_in
     #Because $\eta_D = 0.1$ and $\eta_A = 0.4$ lead to network recovery, we compare the results
     #obtained with these values with the experimental data.
   
-    neuron.A += calculate_growth_rate(neuron, eta=0.4) * dt
-    neuron.D_ex += calculate_growth_rate(neuron, eta=0.1) * dt
-    neuron.D_in += calculate_growth_rate(neuron, eta=0.1) * dt
+    neuron.A += max(0.0, calculate_growth_rate(neuron, eta=0.4) * dt)
+    neuron.D_ex += max(0, calculate_growth_rate(neuron, eta=0.1) * dt)
+    neuron.D_in += max(0.0, calculate_growth_rate(neuron, eta=0.1) * dt)
 
     #In the numerical integration, $A_j$, $D_i^{ex}$ and $D_i^{in}$ are treated as continuous variables, 
     #but when synaptic elements are deleted or used for synapse formation, the values of $A_j$, $D_i^{ex}$ and $D_i^{in}$ 
@@ -120,7 +123,7 @@ def update_structural_elements(neuron, bound_A: int, bound_D_ex: int, bound_D_in
 
     # Deltas berechnen. Wie viele gebundenen Synapsen müssen abgebaut werden
     # Das passiert, wenn die neue Gesamtanzahl unter die bereits gebundenen fällt.
-    delta_A = max(0, new_A - bound_A)
+    delta_A = max(0, bound_A - new_A)
     delta_D_ex = max(0, bound_D_ex - new_D_ex)
     delta_D_in = max(0, bound_D_in - new_D_in)
     
@@ -147,15 +150,18 @@ def calculate_distance_kernel(network, sigma: float = 5.0 * 150.0) -> np.ndarray
 def electrical_activity_step(network):
     """Fast process: Wird alle 1 ms aufgerufen."""
     #TODO soll über GUI veränderbar sein
-    mu = 5.0
+    tau_m = 5.0
 
-    network.I_syn *= np.exp(-1.0 / mu) # Exponentieller Spannungsabfall von allen Neuronen 
+    network.I_syn *= np.exp(-1.0 / tau_m) # Exponentieller Spannungsabfall von allen Neuronen
+
+    #Kappt extrem winzige Kommazahlen auf exakt 0.0 
+    network.I_syn[np.abs(network.I_syn) < 1e-6] = 0.0
     # Es üs halt ein Giotto :/
 
     spiked_index = []
     for i, neuron in enumerate(network.neurons):
         #Hintergruund aktivität wird nach paiper so berechnet
-        I_ext = I_ext = np.random.normal(5.0, 1.0)
+        I_ext = np.random.normal(5.0, 1.0)
         I_total = I_ext + network.I_syn[i]
 
         #feuer frei!!!
@@ -167,8 +173,8 @@ def electrical_activity_step(network):
     for i in spiked_index:
         neuron = network.get_neuron_by_index(i)
         voltage_change = 1.0 if neuron.is_excitatory() else -1.0
-        outgoing_count = network.get_outgoing_synapses(i)
-        network.I_syn += outgoing_count * voltage_change
+        outgoing_synapses_array = network.get_outgoing_synapses(i)
+        network.I_syn += outgoing_synapses_array * voltage_change
         """
         #addiere auf auf alle rausgehenden neuronen die entsprechende spannung
         #TODO müssen wir die spannung noch gewichten???
@@ -196,6 +202,7 @@ def execute_deletions(network, deletion_requests):
                 if random.random() < probably_bound and bound_A > 0:
                     target_index = random.choice(out_synapses)
                     network.update_synapses(neuron_index, target_index, -1)
+                    neuron.vac_A -= 1
                     out_synapses.remove(target_index)
                     bound_A -= 1
                 total_A -= 1      
@@ -211,9 +218,10 @@ def execute_deletions(network, deletion_requests):
                 if total_D_ex <= 0: break
                 prob_bound = bound_D_ex / total_D_ex
                 if random.random() < prob_bound and bound_D_ex > 0:
-                    src_index = random.choice(excitatory_sources)
-                    network.update_synapses(src_idx, neuron_index, -1)
-                    excitatory_sources.remove(src_idx)
+                    source_index = random.choice(excitatory_sources)
+                    network.update_synapses(source_index, neuron_index, -1)
+                    neuron.vac_D_ex -= 1
+                    excitatory_sources.remove(source_index)
                     bound_D_ex -= 1
                 total_D_ex -= 1
 
@@ -227,9 +235,10 @@ def execute_deletions(network, deletion_requests):
                 if total_D_in <= 0: break
                 prob_bound = bound_D_in / total_D_in
                 if random.random() < prob_bound and bound_D_in > 0:
-                    src_idx = random.choice(inhibitory_sources)
-                    network.update_synapses(src_idx, neuron_index, -1)
-                    inhibitory_sources.remove(src_idx)
+                    source_index = random.choice(inhibitory_sources)
+                    network.update_synapses(source_index, neuron_index, -1)
+                    neuron.vac_D_in -= 1
+                    inhibitory_sources.remove(source_index)
                     bound_D_in -= 1
                 total_D_in -= 1
              
@@ -241,27 +250,21 @@ def structural_plasticity_step(network):
     deletion_requests = []
 
     
-    for i, neuron in enumerate(network.neurons):
+    for neuron_index, neuron in enumerate(network.neurons):
         #Herausfinden, wie viele Elemente aktuell gebunden sind
         
-        bound_A = np.sum(network.get_outgoing_synapses(i)) # Ausgehende Synapsen (Spalte i)
-        if neuron.is_excitatory():
-            bound_D_ex = np.sum(network.get_incoming_synapses(i)) # Eingehend von exzitatorischen
-        else:
-            bound_D_ex = 0
-        
-        if neuron.is_inhibitory():
-            bound_D_in = np.sum(network.get_incoming_synapses(i)) # Eingehend von inhibitorischen
-        else:
-            bound_D_in = 0
-            # Das Neuron aktualisieren
+        bound_A = np.sum(network.get_outgoing_synapses(neuron_index)) # Ausgehende Synapsen (Spalte i)
+        bound_D_ex, bound_D_in = network.get_bound_dendrites(neuron_index)
+
+        # Das Neuron aktualisieren
         delta_A, delta_D_ex, delta_D_in = update_structural_elements(neuron, bound_A, bound_D_ex, bound_D_in)
         if delta_A > 0 or delta_D_ex > 0 or delta_D_in > 0:
-            deletion_requests.append((i, delta_A, delta_D_ex, delta_D_in))
+            deletion_requests.append((neuron_index, delta_A, delta_D_ex, delta_D_in))
     
 
-    create_random_connection(network)
     execute_deletions(network, deletion_requests)
+    create_random_connection(network)
+    
 
     # Creation of new synapses (via assign_vacant_elements and check_assignment)
     #create_random_connection(network)
@@ -291,7 +294,7 @@ def assign_vacant_elements(network) -> list:
 
     # Assigning random elements
     # Assigning excitatory elements (axonal to dendritic)
-    while sums["axonal excitatory"] != 0 and sums["dendritic excitatory"] != 0:
+    while sums["axonal excitatory"] > 0 and sums["dendritic excitatory"] > 0:
         # Find random, vacant, excitatory axonal element and the respective neuron
         chosen_axonal_element: int = random.randint(0, sums["axonal excitatory"] - 1)
         for neuron_index in range(len(free_a_ex)):
