@@ -62,9 +62,14 @@ def update_structural_elements(neuron, bound_A: int, bound_D_ex: int, bound_D_in
     #Because $\eta_D = 0.1$ and $\eta_A = 0.4$ lead to network recovery, we compare the results
     #obtained with these values with the experimental data.
   
-    neuron.A += max(0.0, calculate_growth_rate(neuron, eta=0.4) * dt)
-    neuron.D_ex += max(0, calculate_growth_rate(neuron, eta=0.1) * dt)
-    neuron.D_in += max(0.0, calculate_growth_rate(neuron, eta=0.1) * dt)
+
+    neuron.A = max(0.0, neuron.A + calculate_growth_rate(neuron, eta=0.4, v=0.001) * dt)
+    neuron.D_ex = max(0.0, neuron.D_ex + calculate_growth_rate(neuron, eta=0.1, v=0.001) * dt)
+    neuron.D_in = max(0.0, neuron.D_in + calculate_growth_rate(neuron, eta=0.1, v=0.001) * dt)
+    
+   # neuron.A += max(0.0, calculate_growth_rate(neuron, eta=0.4) * dt)
+    #neuron.D_ex += max(0, calculate_growth_rate(neuron, eta=0.1) * dt)
+    #neuron.D_in += max(0.0, calculate_growth_rate(neuron, eta=0.1) * dt)
 
     #In the numerical integration, $A_j$, $D_i^{ex}$ and $D_i^{in}$ are treated as continuous variables, 
     #but when synaptic elements are deleted or used for synapse formation, the values of $A_j$, $D_i^{ex}$ and $D_i^{in}$ 
@@ -161,7 +166,7 @@ def electrical_activity_step(network):
     spiked_index = []
     for i, neuron in enumerate(network.neurons):
         #Hintergruund aktivität wird nach paiper so berechnet
-        I_ext = np.random.normal(5.0, 1.0)
+        I_ext = np.random.normal(6.0, 1.0)
         I_total = I_ext + network.I_syn[i]
 
         #feuer frei!!!
@@ -183,8 +188,6 @@ def electrical_activity_step(network):
         network.I_syn[network.get_outgoing_synapses(i)] += 1.0 if neuron.is_excitatory() else -1.0
         """
 
-
-      
 def execute_deletions(network, deletion_requests):
 
     for neuron_index, dA, dD_ex, dD_in in deletion_requests:
@@ -247,9 +250,9 @@ def structural_plasticity_step(network):
     # TODO Does not seem to work (few synaptic elements are created)
     """Slow process: Wird alle 100 ms aufgerufen."""
     # Deletion of synaptic elements?
+
     deletion_requests = []
 
-    
     for neuron_index, neuron in enumerate(network.neurons):
         #Herausfinden, wie viele Elemente aktuell gebunden sind
         

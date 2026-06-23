@@ -207,12 +207,7 @@ class Network:
             neuron: Neuron = Neuron(x, y, i, NeuronType.INHIBITORY)
             self.neurons.append(neuron)
             self._is_inhibitory_cache[i] = True
-        
-
-        # Probability Kernel
-        self.K = np.zeros((num_neurons, num_neurons), dtype=float)
-        # functions as "from-to graph", entry equals count of synapses from this neuron to the other one
-        
+                
 
         self.synapses = np.zeros((num_neurons, num_neurons), dtype=int)
         self.kernel = calc.calculate_distance_kernel(self, sigma=sigma_dist)
