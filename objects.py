@@ -115,6 +115,9 @@ class Network:
         #gesamt anliegende spannung aller Neuronen
         self.I_syn = np.zeros(num_neurons, dtype=float) 
 
+                # Cache für Neuronentypen für schnellere Lookups
+        self._is_excitatory_cache = np.zeros(num_neurons, dtype=bool)
+        self._is_inhibitory_cache = np.zeros(num_neurons, dtype=bool)
 
         types = [0, 1]
         probabilities = [inhibitory_probability, excitatory_probability]
@@ -191,7 +194,7 @@ class Network:
             
             neuron: Neuron = Neuron(x, y, i, NeuronType.EXCITATORY)
             self.neurons.append(neuron)
-            self.excitatory.append(neuron)
+            self._is_excitatory_cache[i] = True
         
         # Distributing inhibitory neurons
         for i in range(num_ex, num_neurons):
@@ -203,7 +206,7 @@ class Network:
 
             neuron: Neuron = Neuron(x, y, i, NeuronType.INHIBITORY)
             self.neurons.append(neuron)
-            self.inhibitory.append(neuron)
+            self._is_inhibitory_cache[i] = True
         
 
         # Probability Kernel
@@ -240,6 +243,29 @@ class Network:
     def get_outgoing_synapses(self, neuron_index: int):
         return self.synapses[neuron_index, :]
     
+    def get_outgoing_synapse_list(self, neuron_index: int) -> list[int]:
+        counts = self.get_outgoing_synapses(neuron_index)
+        return np.repeat(np.arange(self.num_neurons), counts).tolist()
+
+    def get_incoming_synapse_list(self, neuron_index: int) -> list[int]:
+        counts = self.get_incoming_synapses(neuron_index)
+        return np.repeat(np.arange(self.num_neurons), counts).tolist()
+
+    def get_incoming_excitatory_source_list(self, neuron_index: int) -> list[int]:
+        counts = self.get_incoming_synapses(neuron_index)
+        ex_counts = counts * self._is_excitatory_cache
+        return np.repeat(np.arange(self.num_neurons), ex_counts).tolist()
+
+    def get_incoming_inhibitory_source_list(self, neuron_index: int) -> list[int]:
+        counts = self.get_incoming_synapses(neuron_index)
+        in_counts = counts * self._is_inhibitory_cache
+        return np.repeat(np.arange(self.num_neurons), in_counts).tolist()
+
+    def get_bound_dendrites(self, neuron_index: int) -> tuple[int, int]:
+        in_counts = self.get_incoming_synapses(neuron_index)
+        bound_d_ex = np.sum(in_counts[self._is_excitatory_cache])
+        bound_d_in = np.sum(in_counts[self._is_inhibitory_cache])
+        return bound_d_ex, bound_d_in
     
     def update_synapses(self, _from: int | np.ndarray, to: int | np.ndarray, change_value: int):
         # Update synapses array of the network
