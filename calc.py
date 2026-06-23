@@ -181,60 +181,64 @@ def electrical_activity_step(network):
       
 def execute_deletions(network, deletion_requests):
 
-    for neuron_idx, d_A, d_D_ex, d_D_in in deletion_requests:
-        neuron = network.get_neuron_by_index(neuron_idx)
+    for neuron_index, dA, dD_ex, dD_in in deletion_requests:
+        neuron = network.get_neuron_by_index(neuron_index)
 
         #Axonale Löschungen (Das Neuron verliert ausgehende Stecker)
-        if d_A > 0:
-            out_synapses = network.get_outgoing_synapses(neuron_idx)
-            if len(out_synapses) > 0:
-                # Wähle zufällig d_A Ziele aus, zu denen die Verbindung gekappt wird
-                targets_to_drop = random.sample(sorted(out_synapses), min(d_A, len(out_synapses)))
+        if dA > 0:
+            out_synapses = network.get_outgoing_synapse_list(neuron_index)
+            bound_A = len(out_synapses)
+            total_A = int(neuron.A) + dA  # Ursprüngliche Gesamtmenge vor dem Schrumpfen
+
+            for _ in range(dA):
+                if total_A <= 0: break
+                probably_bound = bound_A / total_A  
+                if random.random() < probably_bound and bound_A > 0:
+                    target_index = random.choice(out_synapses)
+                    network.update_synapses(neuron_index, target_index, -1)
+                    out_synapses.remove(target_index)
+                    bound_A -= 1
+                total_A -= 1      
                 
-                for target_idx in targets_to_drop:
-                    network.update_synapses(neuron_idx, target_idx, False)
-                    
-                    # Dem Ziel-Neuron bleibt seine Steckdose erhalten -> Vakanz steigt!
-                    target_neuron = network.get_neuron_by_index(target_idx)
-                    if neuron.is_excitatory():
-                        target_neuron.vac_D_ex += 1
-                    else:
-                        target_neuron.vac_D_in += 1
 
         #Exzitatorische Dendriten-Löschungen (Das Neuron verliert eingehende Verbindungen von exzitatorischen Quellen)
-        if d_D_ex > 0:
-            in_synapses = network.get_incoming_synapses(neuron_idx)
-            # Filtere nach Quellen, die exzitatorisch sind
-            ex_sources = [src for src in in_synapses if network.get_neuron_by_index(src).is_excitatory()]
-            if len(ex_sources) > 0:
-                sources_to_drop = random.sample(ex_sources, min(d_D_ex, len(ex_sources)))
-                
-                for src_idx in sources_to_drop:
-                    network.update_synapses(src_idx, neuron_idx, -1)
-                    # Der Quelle bleibt der Stecker erhalten -> Vakanz steigt!
-                    network.get_neuron_by_index(src_idx).vac_A += 1
+        if dD_ex > 0:
+            excitatory_sources = network.get_incoming_excitatory_source_list(neuron_index)
+            bound_D_ex = len(excitatory_sources)
+            total_D_ex = int(neuron.D_ex) + dD_ex
+
+            for _ in range(dD_ex):
+                if total_D_ex <= 0: break
+                prob_bound = bound_D_ex / total_D_ex
+                if random.random() < prob_bound and bound_D_ex > 0:
+                    src_index = random.choice(excitatory_sources)
+                    network.update_synapses(src_idx, neuron_index, -1)
+                    excitatory_sources.remove(src_idx)
+                    bound_D_ex -= 1
+                total_D_ex -= 1
 
         #Inhibitorische Dendriten-Löschungen (Das Neuron verliert eingehende Verbindungen von inhibitorischen Quellen)
-        if d_D_in > 0:
-            in_synapses = network.get_incoming_synapses(neuron_idx)
-            # Filtere nach Quellen, die inhibitorisch sind
-            in_sources = [src for src in in_synapses if network.get_neuron_by_index(src).is_inhibitory()]
-            if len(in_sources) > 0:
-                sources_to_drop = random.sample(in_sources, min(d_D_in, len(in_sources)))
-                
-                for src_idx in sources_to_drop:
-                    network.update_synapses(src_idx, neuron_idx, -1)
-                    # Der Quelle bleibt der Stecker erhalten -> Vakanz steigt!
-                    network.get_neuron_by_index(src_idx).vac_A += 1
-             
+        if dD_in > 0:
+            inhibitory_sources = network.get_incoming_inhibitory_source_list(neuron_index)
+            bound_D_in = len(inhibitory_sources)
+            total_D_in = int(neuron.D_in) + dD_in
 
+            for _ in range(dD_in):
+                if total_D_in <= 0: break
+                prob_bound = bound_D_in / total_D_in
+                if random.random() < prob_bound and bound_D_in > 0:
+                    src_idx = random.choice(inhibitory_sources)
+                    network.update_synapses(src_idx, neuron_index, -1)
+                    inhibitory_sources.remove(src_idx)
+                    bound_D_in -= 1
+                total_D_in -= 1
+             
 
 def structural_plasticity_step(network):
     # TODO Does not seem to work (few synaptic elements are created)
     """Slow process: Wird alle 100 ms aufgerufen."""
     # Deletion of synaptic elements?
     deletion_requests = []
-
 
     
     for i, neuron in enumerate(network.neurons):
