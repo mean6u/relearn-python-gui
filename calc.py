@@ -204,7 +204,12 @@ def execute_deletions(network, deletion_requests):
                 if random.random() < probably_bound and bound_A > 0:
                     target_index = random.choice(out_synapses)
                     network.update_synapses(neuron_index, target_index, -1)
-                    neuron.vac_A -= 1
+                    target_neuron = network.get_neuron_by_index(target_index)
+                    if neuron.is_excitatory: # (Angenommene Eigenschaft, ggf. anpassen)
+                        target_neuron.vac_D_ex += 1
+                    else:
+                        target_neuron.vac_D_in += 1
+                    neuron.A -= 1
                     out_synapses.remove(target_index)
                     bound_A -= 1
                 total_A -= 1      
@@ -222,7 +227,10 @@ def execute_deletions(network, deletion_requests):
                 if random.random() < prob_bound and bound_D_ex > 0:
                     source_index = random.choice(excitatory_sources)
                     network.update_synapses(source_index, neuron_index, -1)
-                    neuron.vac_D_ex -= 1
+                    source_neuron = network.get_neuron_by_index(source_index)
+                    source_neuron.vac_A += 1
+
+                    neuron.D_ex -= 1
                     excitatory_sources.remove(source_index)
                     bound_D_ex -= 1
                 total_D_ex -= 1
@@ -239,7 +247,9 @@ def execute_deletions(network, deletion_requests):
                 if random.random() < prob_bound and bound_D_in > 0:
                     source_index = random.choice(inhibitory_sources)
                     network.update_synapses(source_index, neuron_index, -1)
-                    neuron.vac_D_in -= 1
+                    source_neuron = network.get_neuron_by_index(source_index)
+                    source_neuron.vac_A += 1
+                    neuron.D_in -= 1
                     inhibitory_sources.remove(source_index)
                     bound_D_in -= 1
                 total_D_in -= 1
