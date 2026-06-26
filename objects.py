@@ -119,6 +119,7 @@ class Network:
         self.sigma = 750.0
         self.eta_A = 0.4
         self.eta_D = 0.1
+        self.k = 1.0
 
 
         #gesamt anliegende spannung aller Neuronen

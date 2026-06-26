@@ -166,7 +166,7 @@ def electrical_activity_step(network):
     for i, neuron in enumerate(network.neurons):
         #Hintergruund aktivität wird nach paiper so berechnet
         I_ext = np.random.normal(network.I_ext_mean, 1.0)
-        I_total = I_ext + network.I_syn[i]
+        I_total = I_ext + network.k * network.I_syn[i]
 
         #feuer frei!!!
         if step_electrical(neuron, I_total):

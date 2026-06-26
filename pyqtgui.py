@@ -408,17 +408,17 @@ class simulation(QMainWindow):
         controls_layout.addWidget(self.eps_label)
         controls_layout.addWidget(self.eps_slider)
 
-        # 4. Slider for Calcium Decay (Tau_Ca)
+        # Slider for Calcium Decay (Tau_Ca)
         self.tau_label = QLabel(f"Calcium Decay (tau_Ca): {self.graph.network.tau_ca:.0f} ms")
         self.tau_slider = QSlider(Qt.Orientation.Horizontal)
         self.tau_slider.setMinimum(100)   # Corresponds to 1000 ms
-        self.tau_slider.setMaximum(1500)  # Corresponds to 15000 ms
-        self.tau_slider.setValue(int(self.graph.network.tau_ca))
+        self.tau_slider.setMaximum(15000) # Corresponds to 15000 ms
         self.tau_slider.valueChanged.connect(self.update_tau_ca)
+        self.tau_slider.setValue(int(self.graph.network.tau_ca))
         controls_layout.addWidget(self.tau_label)
         controls_layout.addWidget(self.tau_slider)
 
-        # 5. Slider for Distance Kernel (Sigma)
+        #Slider for Distance Kernel (Sigma)
         self.sigma_label = QLabel(f"Kernel Range (Sigma): {self.graph.network.sigma:.0f} µm")
         self.sigma_slider = QSlider(Qt.Orientation.Horizontal)
         self.sigma_slider.setMinimum(2)   # Corresponds to 100
@@ -428,8 +428,8 @@ class simulation(QMainWindow):
         controls_layout.addWidget(self.sigma_label)
         controls_layout.addWidget(self.sigma_slider)
 
-        # 6. Slider for eta_A (Axon)
-        self.eta_a_label = QLabel(f"Optimal Ca for Axons (eta_A): {self.graph.network.eta_A:.2f}")
+        #Slider for eta_A (Axon)
+        self.eta_a_label = QLabel(f"Max Ca for Axons (eta_A): {self.graph.network.eta_A:.2f}")
         self.eta_a_slider = QSlider(Qt.Orientation.Horizontal)
         self.eta_a_slider.setMinimum(10)  # Corresponds to 0.1
         self.eta_a_slider.setMaximum(80)   # Corresponds to 0.8
@@ -438,17 +438,27 @@ class simulation(QMainWindow):
         controls_layout.addWidget(self.eta_a_label)
         controls_layout.addWidget(self.eta_a_slider)
 
-        # 7. Slider for eta_D (Dendrite)
-        self.eta_d_label = QLabel(f"Optimal Ca for Dendrites (eta_D): {self.graph.network.eta_D:.2f}")
+        #Slider for eta_D (Dendrite)
+        self.eta_d_label = QLabel(f"Max Ca for Dendrites (eta_D): {self.graph.network.eta_D:.2f}")
         self.eta_d_slider = QSlider(Qt.Orientation.Horizontal)
         self.eta_d_slider.setMinimum(0)   # Corresponds to 0.0
-        self.eta_d_slider.setMaximum(50)  # Corresponds to 0.5
+        self.eta_d_slider.setMaximum(80)  # Corresponds to 0.8
         self.eta_d_slider.setValue(int(self.graph.network.eta_D * 100))
         self.eta_d_slider.valueChanged.connect(self.update_eta_d)
         controls_layout.addWidget(self.eta_d_label)
         controls_layout.addWidget(self.eta_d_slider)
+
+        #Slider for k (Fire intensety)
+        self.k_label = QLabel(f"Fire Intensity (k): {self.graph.network.k:.2f}")
+        self.k_slider = QSlider(Qt.Orientation.Horizontal)
+        self.k_slider.setMinimum(0)    # Corresponds to 0.0
+        self.k_slider.setMaximum(500)  # Corresponds to 5.0
+        self.k_slider.setValue(int(self.graph.network.k * 100))
+        self.k_slider.valueChanged.connect(self.update_k)
+        controls_layout.addWidget(self.k_label)
+        controls_layout.addWidget(self.k_slider)
         
-        self.toggle_controls(True) # Hide widget initially
+        self.toggle_controls(True) 
         
 
     def toggle_controls(self, checked):
@@ -489,12 +499,17 @@ class simulation(QMainWindow):
     def update_eta_a(self, value):
         val = value / 100.0
         self.graph.network.eta_A = val
-        self.eta_a_label.setText(f"Optimal Ca for Axons (eta_A): {val:.2f}")
+        self.eta_a_label.setText(f"Max Ca for Axons (eta_A): {val:.2f}")
 
     def update_eta_d(self, value):
         val = value / 100.0
         self.graph.network.eta_D = val
-        self.eta_d_label.setText(f"Optimal Ca for Dendrites (eta_D): {val:.2f}")
+        self.eta_d_label.setText(f"Max Ca for Dendrites (eta_D): {val:.2f}")
+
+    def update_k(self, value):
+        val = value / 100.0  # Scale the integer value from the slider to a float
+        self.graph.network.k = val
+        self.k_label.setText(f"Fire Intensity (k): {val:.2f}")
 
     def update_speed_factor(self, value):
         self.speed_factor = value
