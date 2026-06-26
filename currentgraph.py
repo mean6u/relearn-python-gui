@@ -133,16 +133,12 @@ class currentgraph():
                 all_exc_x, all_exc_y,
                 all_inh_x, all_inh_y)
 
-    def update_slow_processes(self, steps):
-        for _ in range(steps):
-            calc.structural_plasticity_step(self.network)
-
-        # Synapses are updated with every slow process (updates come from the network)
+    def update_slow_processes(self):
+        calc.structural_plasticity_step(self.network)
         self.update_synapses()
         
-    def update_fast_processes(self, steps):
-        for _ in range(steps):
-            calc.electrical_activity_step(self.network)
+    def update_fast_processes(self):
+        calc.electrical_activity_step(self.network)
 
     def update_synapses(self):
         self.synapses = self.network.synapses

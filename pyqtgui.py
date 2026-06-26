@@ -2,10 +2,11 @@ import sys
 import pyqtgraph as pg
 import numpy as np
 from PyQt6.QtWidgets import QApplication, QLineEdit, QMainWindow, QPushButton, QVBoxLayout, QHBoxLayout, QWidget, QSlider, QLabel, QStyleFactory
-from PyQt6.QtCore import Qt, QTimer
+from PyQt6.QtCore import QObject, QThread, Qt, QTimer, pyqtSignal, pyqtSlot, QMutex
 from PyQt6.QtGui import QPalette, QColor, QIcon, QIntValidator, QPainterPath
 from currentgraph import currentgraph
 from objects import NeuronType, Neuron
+import time
 
 # global variable for dark mode
 dark_mode = True
@@ -92,7 +93,6 @@ class guilauncher(QMainWindow):
         self.start_button = QPushButton("Start Simulation")
         self.start_button.setStyleSheet("background-color: green; color: black; font: bold 14px;")
         self.start_button.setMaximumSize(300, 50)
-        self.start_button.setGeometry
         # start implementing the connection logic
         self.start_button.clicked.connect(self.start_sim)
         layout.addWidget(self.start_button)
@@ -155,22 +155,75 @@ class guilauncher(QMainWindow):
 
         QApplication.instance().setPalette(cur_palette)
 
+class SimulationWorker(QObject):
+
+    def __init__(self, graph, mutex):
+        super().__init__()
+        self.graph = graph
+        self.mutex = mutex
+        self._is_running = False
+        self._is_paused = False
+        self.time_counter = 0
+        self.counter = 0
+        self.speed_controle = 100
+
+    @pyqtSlot()
+    def run(self):
+        self._is_running = True
+        while self._is_running:
+            if self._is_paused:
+                QThread.msleep(100)
+                continue
+            
+            self.mutex.lock()
+            self.time_counter += 1
+            self.graph.update_fast_processes()
+
+            if self.time_counter % 100 == 0:
+                self.graph.update_slow_processes()
+            self.mutex.unlock()
+
+            if self.speed_controle > 0:
+
+                wait_seconds = (self.speed_controle / 100.0) / 1000.0 
+                target_time = time.perf_counter() + wait_seconds
+                
+                while time.perf_counter() < target_time:
+                    QThread.yieldCurrentThread()
+            else:
+                pass
+                #QThread.yieldCurrentThread()
+
+       
+
+            
+            
+
+    @pyqtSlot()
+    def stop(self):
+        """Stops the simulation loop."""
+        self._is_running = False
+
+    @pyqtSlot()
+    def pause(self):
+        self._is_paused = True
+
+    @pyqtSlot()
+    def resume(self):
+        self._is_paused = False
 
 
 class simulation(QMainWindow):
     def __init__(self, is_dark_mode: bool, neuron_count: int, exc_count: int):
         super().__init__()
 
+        self.mutex = QMutex()
 
         # Initialising currentgraph
         # TODO Seems to fail when entering 500 for the number of neurons (in the launcher)
         self.graph = currentgraph(neuron_count, exc_count/100, (100-exc_count)/100)
         self.neurons = self.graph.neurons
 
-
-        # Speed for Timer
-
-        self.speed_factor = 1
 
 
         # Test
@@ -192,9 +245,6 @@ class simulation(QMainWindow):
             neuron.vac_A = 0
             neuron.vac_D_ex = 0
             neuron.vac_D_in = 0
-
-        
-        self.graph.network.synapses[0, 1] = True
 
 
         # Configs
@@ -274,9 +324,23 @@ class simulation(QMainWindow):
         legend.addItem(self.axons, 'Axons')
 
 
-        # Timer
 
-        self.elapsed_ms = 0 # keep track of elapsed time, linked with timer
+        self.GUI_FPS = 20  
+        self.simulation_timer = QTimer()
+
+        self.thread = QThread()
+        self.worker = SimulationWorker(self.graph, self.mutex)
+        self.worker.moveToThread(self.thread)
+
+        self.thread.started.connect(self.worker.run)
+        self.simulation_timer.timeout.connect(self.fetch_and_update_gui)
+
+        self.thread.start()
+        self.simulation_timer.start(1000 // self.GUI_FPS)
+
+
+        # Timer
+        self.elapsed_ms = 0 
         self.time_overlay = QLabel("00:00.0", self.plot_widget)
         self.time_overlay.setStyleSheet("""
             background-color: rgba(0, 0, 0, 120);
@@ -286,28 +350,22 @@ class simulation(QMainWindow):
             font-weight: bold;
             padding: 8px;
         """)
-
-        self.timer = QTimer()
-        self.timer.timeout.connect(self.simulate_time_stamp)
-        self.timer.start(100)
-
-
         # Timer Speedup
         
         timer_speed_layout = QHBoxLayout()
 
-        self.timer_speed_txt = QLabel("Simulation Speed: 1x")
+        self.timer_speed_txt = QLabel("Simulation Delay: 100")
         timer_speed_layout.addWidget(self.timer_speed_txt)
 
         self.timer_speed_slider = QSlider(Qt.Orientation.Horizontal)
-        self.timer_speed_slider.setMinimum(1)
-        self.timer_speed_slider.setMaximum(4)
-        self.timer_speed_slider.setValue(1)
+        self.timer_speed_slider.setMinimum(0)
+        self.timer_speed_slider.setMaximum(100)
+        self.timer_speed_slider.setValue(100)
         self.timer_speed_slider.setTickPosition(QSlider.TickPosition.TicksBelow)
-        self.timer_speed_slider.setTickInterval(1)
+        self.timer_speed_slider.setTickInterval(50)
         self.timer_speed_slider.setFixedWidth(400)
 
-        self.timer_speed_slider.valueChanged.connect(self.update_speed_factor)
+        self.timer_speed_slider.valueChanged.connect(self.update_speed_control)
 
         timer_speed_layout.addWidget(self.timer_speed_slider)
 
@@ -335,16 +393,6 @@ class simulation(QMainWindow):
         timer_btn_layout.addWidget(self.timer_forward_btn)
 
         layout.addLayout(timer_btn_layout)
-
-        # Timer for slow and fast process
-
-        self.timer_slow = QTimer()
-        self.timer_slow.timeout.connect(self.slow_process)
-        self.timer_slow.start(1000)
-
-        self.timer_fast = QTimer()
-        self.timer_fast.timeout.connect(self.fast_process)
-        self.timer_fast.start(10)
 
 
 
@@ -511,35 +559,31 @@ class simulation(QMainWindow):
         self.graph.network.k = val
         self.k_label.setText(f"Fire Intensity (k): {val:.2f}")
 
-    def update_speed_factor(self, value):
-        self.speed_factor = value
-        self.timer_speed_txt.setText(f"Simulation Speed: {value}x")
+    def update_speed_control(self, value):
+        self.worker.speed_controle = value
+        self.timer_speed_txt.setText(f"Simulation Delay: {value}")
 
-    def simulate_time_stamp(self):
-        for _ in range(int(self.speed_factor)):
-            self.elapsed_ms += 100
-        
+
+    def update_gui_elements(self, adj, ax_x, ax_y, exc_x, exc_y, inh_x, inh_y, counter):
+        self.elapsed_ms = counter
+        self.draw_synapses(adj)
+        self.draw_synaptic_elements(ax_x, ax_y, exc_x, exc_y, inh_x, inh_y)
         self.display_time()
 
-
-    def slow_process(self):
-        self.graph.update_slow_processes(self.speed_factor)
-        self.draw_synaptic_elements(*self.graph.update_synaptic_elements())
-        
-        # Every slow process synapses are getting drawn in grey
-        self.draw_synapses(self.graph.get_active_synapses())
-
-
-    def fast_process(self):
-        self.graph.update_fast_processes(self.speed_factor)
-        pass
-
+    def fetch_and_update_gui(self):
+        self.mutex.lock()
+        ax_x, ax_y, exc_x, exc_y, inh_x, inh_y = self.graph.update_synaptic_elements()
+        active_synapses = self.graph.get_active_synapses()
+        counter_val = self.worker.time_counter
+        self.mutex.unlock()
+    
+        self.update_gui_elements(active_synapses, ax_x, ax_y, exc_x, exc_y, inh_x, inh_y, counter_val)
 
     def display_time(self):
         total_seconds = self.elapsed_ms // 1000
         minutes = total_seconds // 60
         seconds = total_seconds % 60
-        tenth_seconds = (self.elapsed_ms % 1000) // 100
+        tenth_seconds = (self.elapsed_ms % 1000) // 100 # Berechnet die Zehntelsekunden
         self.time_overlay.setText(f"{minutes:02d}:{seconds:02d}.{tenth_seconds:01d}")
 
 
@@ -557,16 +601,21 @@ class simulation(QMainWindow):
     # Toggle Pause/Resume Button for Simulation
 
     def toggle_simulation(self):
-        if self.timer.isActive():
-            self.timer.stop()
-            self.timer_slow.stop()
-            self.timer_fast.stop()
+        if self.simulation_timer.isActive():
+            self.worker.pause()
+            self.simulation_timer.stop()
             self.timer_pause_btn.setText("►")
         else:
-            self.timer.start()
-            self.timer_slow.start()
-            self.timer_fast.start()
+            self.worker.resume()
+            self.simulation_timer.start()
             self.timer_pause_btn.setText("⏸")
+
+    def closeEvent(self, event):
+        """Ensure the worker thread is properly shut down on window close."""
+        self.worker.stop()
+        self.thread.quit()
+        self.thread.wait()
+        event.accept()
 
 
     # Spawn Neurons (based on User Input)
@@ -618,6 +667,10 @@ class simulation(QMainWindow):
     def return_to_launcher(self):
         self.launcher = guilauncher()
         self.launcher.show()
+        # Properly close the current simulation window and its thread
+        self.worker.stop()
+        self.thread.quit()
+        self.thread.wait()
         self.close()
     
 
