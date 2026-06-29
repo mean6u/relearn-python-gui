@@ -194,10 +194,6 @@ class SimulationWorker(QObject):
                 pass
                 #QThread.yieldCurrentThread()
 
-       
-
-            
-            
 
     @pyqtSlot()
     def stop(self):
@@ -645,6 +641,9 @@ class simulation(QMainWindow):
 
         self.network_graph.setData(pos=pos, pen=pg.mkPen(color=(150, 150, 150), width=2), size=12, symbol=symbols, symbolBrush=colors, symbolPen=None, pxMode=False)
 
+        empty_adj = np.empty((0, 2), dtype=int)
+        self.synapse_lines.setData(pos=pos, adj=empty_adj, pen=pg.mkPen(color=(120,120,120,100), width=1.5), size=0, symbol='o')
+
         self.draw_synaptic_elements(*self.graph.update_synaptic_elements())
         
     
@@ -656,7 +655,10 @@ class simulation(QMainWindow):
 
     def draw_synapses(self, active_synapses):
         pos = self.graph.neuron_positions
-        adj = active_synapses
+
+        if len(active_synapses) == 0:
+            active_synapses = np.empty((0, 2), dtype=int)
+
         self.synapse_lines.setData(pos=pos, adj=active_synapses, pen=pg.mkPen(color=(120,120,120,100), width=1.5), size=0, symbol='o')
 
 

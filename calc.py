@@ -47,7 +47,11 @@ def calculate_growth_rate(neuron, eta: float, epsilon: float = 0.7, v: float = 0
     xi_z = (eta + epsilon)/2
     zeta_z = (eta - epsilon) / (2 * np.sqrt(-np.log(0.5)))
 
-    dz_dt = v*(2.0*np.exp(-((neuron.calcium_level - xi_z)/zeta_z)**2) - 1.0)
+    # Avoid division by zero
+    if abs(zeta_z) < 1e-12:
+        zeta_z = 1e-12
+
+    dz_dt = v * (2.0 * np.exp(-((neuron.calcium_level - xi_z)/zeta_z)**2) - 1.0)
     return dz_dt
 
 
