@@ -493,7 +493,7 @@ class simulation(QMainWindow):
         controls_layout.addWidget(self.eta_d_slider)
 
         #Slider for k (Fire intensety)
-        self.k_label = QLabel(f"Fire Intensity (k): {self.graph.network.k:.2f}")
+        self.k_label = QLabel(f"Synapse Conductance (k): {self.graph.network.k:.2f}")
         self.k_slider = QSlider(Qt.Orientation.Horizontal)
         self.k_slider.setMinimum(0)    # Corresponds to 0.0
         self.k_slider.setMaximum(500)  # Corresponds to 5.0
@@ -537,7 +537,7 @@ class simulation(QMainWindow):
     def update_sigma(self, value):
         val = value * 50
         self.graph.network.sigma = val
-        self.sigma_label.setText(f"Kernel Range (Sigma): {val:.0f} µm")
+        self.sigma_label.setText(f"Kernel Range (sigma): {val:.0f} µm")
         self.graph.network.kernel = self.graph.network.calculate_distance_kernel(sigma=val)
 
     def update_eta_a(self, value):
@@ -553,7 +553,7 @@ class simulation(QMainWindow):
     def update_k(self, value):
         val = value / 100.0  # Scale the integer value from the slider to a float
         self.graph.network.k = val
-        self.k_label.setText(f"Fire Intensity (k): {val:.2f}")
+        self.k_label.setText(f"Synapse Conductance (k): {val:.2f}")
 
     def update_speed_control(self, value):
         self.worker.speed_controle = value
