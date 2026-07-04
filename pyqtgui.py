@@ -274,11 +274,15 @@ class simulation(QMainWindow):
         self.view = self.plot_widget.addViewBox()
         self.view.setAspectLocked(True)
 
+        self.view.scene().sigMouseClicked.connect(self.on_view_clicked)
 
         # Neuron Layer
         
         self.network_graph = pg.GraphItem()
         self.synapse_lines = pg.GraphItem()
+        self.calcium_text_item = None
+        self.selected_neuron_index = None  
+        self.network_graph.scatter.sigClicked.connect(self.on_neuron_clicked)
 
         self.view.addItem(self.network_graph)
         self.view.addItem(self.synapse_lines)
@@ -530,7 +534,7 @@ class simulation(QMainWindow):
         self.eps_label.setText(f"Stress Set-Point (epsilon): {float_val:.2f}")
 
     def update_tau_ca(self, value):
-        val = float(value*10)
+        val = float(value)
         self.graph.network.tau_ca = val
         self.tau_label.setText(f"Calcium Decay (tau_Ca): {val:.0f} ms")
 
@@ -561,13 +565,19 @@ class simulation(QMainWindow):
 
 
     def update_gui_elements(self, adj, ax_x, ax_y, exc_x, exc_y, inh_x, inh_y, counter):
+        self.mutex.lock()
         self.elapsed_ms = counter
         self.draw_synapses(adj)
         self.draw_synaptic_elements(ax_x, ax_y, exc_x, exc_y, inh_x, inh_y)
         self.display_time()
 
+        if self.selected_neuron_index is not None and self.calcium_text_item:
+            neuron = self.graph.network.get_neuron_by_index(self.selected_neuron_index)
+            text = f"Ca: {neuron.calcium_level:.4f}"
+            self.calcium_text_item.setText(text)
+        self.mutex.unlock()
+
     def fetch_and_update_gui(self):
-        self.mutex.lock()
         ax_x, ax_y, exc_x, exc_y, inh_x, inh_y = self.graph.update_synaptic_elements()
         active_synapses = self.graph.get_active_synapses()
         counter_val = self.worker.time_counter
@@ -675,6 +685,29 @@ class simulation(QMainWindow):
         self.thread.wait()
         self.close()
     
+    def on_view_clicked(self, event):
+        points = self.network_graph.scatter.pointsAt(event.pos())
+        if len(points) == 0:
+            if self.calcium_text_item:
+                self.view.removeItem(self.calcium_text_item)
+                self.calcium_text_item = None
+                self.selected_neuron_index = None
+
+    def on_neuron_clicked(self, scatter_item, points):
+        if not points:
+            self.view.removeItem(self.calcium_text_item)
+            return
+
+        point = points[0]
+        self.selected_neuron_index = point.index()
+        neuron = self.graph.network.get_neuron_by_index(self.selected_neuron_index)
+
+        if not self.calcium_text_item:
+            self.calcium_text_item = pg.TextItem("", color=(220, 220, 220), anchor=(0.5, -1.0))
+            self.view.addItem(self.calcium_text_item)
+        
+        self.calcium_text_item.setPos(neuron.x, neuron.y)
+        self.calcium_text_item.setText(f"Ca: {neuron.calcium_level:.4f}")
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
