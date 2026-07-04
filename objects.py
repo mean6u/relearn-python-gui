@@ -245,6 +245,9 @@ class Network:
     def get_incoming_synapses(self, neuron_index: int):
         return self.synapses[:, neuron_index]
     
+    def get_amount_of_synapses(self, from_index: int, to_index: int):
+        return self.synapses[from_index, to_index]
+    
     def get_outgoing_synapses(self, neuron_index: int):
         return self.synapses[neuron_index, :]
     
@@ -323,8 +326,11 @@ class Network:
     def get_connection_indices(self):
         """returns the (from, to) index of all synapses"""
         return np.argwhere(self.synapses != 0)
-        
-        
+    def get_undirected_connection_indices(self):
+        """returns the (from, to) index of all synapses, but only one direction"""
+        combined_matrix = self.synapses + self.synapses.T
+        upper_triangle = np.triu(combined_matrix, k=1)
+        return np.argwhere(upper_triangle != 0)
 
         
 

@@ -281,6 +281,7 @@ class simulation(QMainWindow):
         self.network_graph = pg.GraphItem()
         self.synapse_lines = pg.GraphItem()
         self.calcium_text_item = None
+        self.synapse_count_texts = []
         self.selected_neuron_index = None  
         self.network_graph.scatter.sigClicked.connect(self.on_neuron_clicked)
 
@@ -578,13 +579,14 @@ class simulation(QMainWindow):
         self.mutex.unlock()
 
     def fetch_and_update_gui(self):
+        self.mutex.lock()
         ax_x, ax_y, exc_x, exc_y, inh_x, inh_y = self.graph.update_synaptic_elements()
         active_synapses = self.graph.get_active_synapses()
         counter_val = self.worker.time_counter
         self.mutex.unlock()
     
-        self.update_gui_elements(active_synapses, ax_x, ax_y, exc_x, exc_y, inh_x, inh_y, counter_val)
-
+        self.update_gui_elements(active_synapses, ax_x, ax_y, exc_x, exc_y, inh_x, inh_y, counter_val) 
+        
     def display_time(self):
         total_seconds = self.elapsed_ms // 1000
         minutes = total_seconds // 60
@@ -665,11 +667,26 @@ class simulation(QMainWindow):
 
     def draw_synapses(self, active_synapses):
         pos = self.graph.neuron_positions
+        pen_color = (120, 120, 120, 100)
+
+        for text_item in self.synapse_count_texts:
+            self.view.removeItem(text_item)
+        self.synapse_count_texts.clear()
 
         if len(active_synapses) == 0:
             active_synapses = np.empty((0, 2), dtype=int)
+        else:
+            for from_idx, to_idx in active_synapses:
+                count = self.graph.network.get_amount_of_synapses(from_idx, to_idx)
+                if count > 1:
+                    mid_x = (pos[from_idx][0] + pos[to_idx][0]) / 2
+                    mid_y = (pos[from_idx][1] + pos[to_idx][1]) / 2
+                    text = pg.TextItem(str(count), color=pen_color[:-1], anchor=(0.5, 0.5))
+                    text.setPos(mid_x, mid_y)
+                    self.view.addItem(text)
+                    self.synapse_count_texts.append(text)
 
-        self.synapse_lines.setData(pos=pos, adj=active_synapses, pen=pg.mkPen(color=(120,120,120,100), width=1.5), size=0, symbol='o')
+        self.synapse_lines.setData(pos=pos, adj=active_synapses, pen=pg.mkPen(color=pen_color, width=1.5), size=0, symbol='o')
 
 
     # TODO Implement firing visualization
