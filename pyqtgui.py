@@ -480,7 +480,7 @@ class simulation(QMainWindow):
         #Slider for eta_A (Axon)
         self.eta_a_label = QLabel(f"Max Ca for Axons (eta_A): {self.graph.network.eta_A:.2f}")
         self.eta_a_slider = QSlider(Qt.Orientation.Horizontal)
-        self.eta_a_slider.setMinimum(10)  # Corresponds to 0.1
+        self.eta_a_slider.setMinimum(0)  # Corresponds to 0.0
         self.eta_a_slider.setMaximum(80)   # Corresponds to 0.8
         self.eta_a_slider.setValue(int(self.graph.network.eta_A * 100))
         self.eta_a_slider.valueChanged.connect(self.update_eta_a)
