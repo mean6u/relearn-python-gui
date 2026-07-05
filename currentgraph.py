@@ -8,6 +8,7 @@ class currentgraph():
         self.neurons = self.network.neurons
         self.neuron_positions = np.array([[n.x, n.y] for n in self.neurons])
         self.synapses = self.network.synapses
+        self.spiked_indices = []
 
 
     
@@ -138,7 +139,7 @@ class currentgraph():
         self.update_synapses()
         
     def update_fast_processes(self):
-        calc.electrical_activity_step(self.network)
+        spiked_index = calc.electrical_activity_step(self.network)
 
     def update_synapses(self):
         self.synapses = self.network.synapses

@@ -163,6 +163,7 @@ class SimulationWorker(QObject):
         self.time_counter = 0
         self.counter = 0
         self.speed_control = 100
+        self.spiked_index = []
 
     @pyqtSlot()
     def run(self):
@@ -175,7 +176,7 @@ class SimulationWorker(QObject):
             
             self.mutex.lock()
             self.time_counter += 1
-            self.graph.update_fast_processes()
+            self.spiked_index = self.graph.update_fast_processes()
 
             if self.time_counter % 100 == 0:
                 self.graph.update_slow_processes()
@@ -337,21 +338,22 @@ class simulation(QMainWindow):
 
         # Timer Player
         timer_btn_layout = QHBoxLayout()
-
+        """
         self.timer_rewind_btn = QPushButton("⏮")
         self.timer_rewind_btn.clicked.connect(self.rewind_time)
         self.timer_rewind_btn.setStyleSheet("background-color: grey; color: white; font: bold 20px; border-color: red;")
-        timer_btn_layout.addWidget(self.timer_rewind_btn)
+        timer_btn_layout.addWidget(self.timer_rewind_btn)"""
 
         self.timer_pause_btn = QPushButton("⏸")
         self.timer_pause_btn.clicked.connect(self.toggle_simulation)
         self.timer_pause_btn.setStyleSheet("background-color: green; color: black; font: bold 20px;")
         timer_btn_layout.addWidget(self.timer_pause_btn)
 
+        """
         self.timer_forward_btn = QPushButton("⏭")
         self.timer_forward_btn.clicked.connect(self.forward_time)
         self.timer_forward_btn.setStyleSheet("background-color: grey; color: white; font: bold 20px;")
-        timer_btn_layout.addWidget(self.timer_forward_btn)
+        timer_btn_layout.addWidget(self.timer_forward_btn)"""
 
         layout.addLayout(timer_btn_layout)
 
@@ -559,20 +561,6 @@ class simulation(QMainWindow):
         seconds = total_seconds % 60
         tenth_seconds = (self.elapsed_ms % 1000) // 100 # Berechnet die Zehntelsekunden
         self.time_overlay.setText(f"{minutes:02d}:{seconds:02d}.{tenth_seconds:01d}")
-
-
-    def rewind_time(self):
-        """Rewinds the simulation time."""
-        if self.elapsed_ms < 1000:
-            self.elapsed_ms = 0
-        else:
-            self.elapsed_ms -= 1000
-        self.display_time()
-
-    def forward_time(self):
-        """Forwards the simulation time."""
-        self.elapsed_ms += 10000
-        self.display_time()
 
     def toggle_simulation(self):
         """Toggles the simulation."""

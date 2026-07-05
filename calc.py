@@ -143,6 +143,7 @@ def electrical_activity_step(network):
         voltage_change = 1.0 if neuron.is_excitatory() else -1.0
         outgoing_synapses_array = network.get_amount_of_outgoing_synapses(i)
         network.I_syn += outgoing_synapses_array * voltage_change
+    return spiked_index
 
 def execute_deletions(network, deletion_requests):
     """Executes the deletion of synaptic elements based on the deletion requests.
