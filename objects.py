@@ -4,79 +4,53 @@ import numpy as np
 import calc
 
 class NeuronType(Enum):
+    """Enum for neuron types"""
     INHIBITORY = 0
     EXCITATORY = 1
     
 class Neuron:
+    """Class representing a neuron in the network"""
     def __init__(self, x, y, id, neuron_type: NeuronType):
-        # Unique id and type (exhibitory or inhibitory)
         self.id = id
         self.type = neuron_type
 
-        # Position of neuron
         self.x = x
         self.y = y
         
-        #Izhikevich Modell (a=0.1, b=0.2, c=-65.0, d=2.0)
-        self.v = -65.0  # Membrane potential
-        self.u = 0.0    # Membrane recovery variable
+       
+        self.v = -65.0  
+        self.u = 0.0    
 
-        self.calcium_level = 0  # Calcium level of neuron
-        self.beta = 0.001       # Increase in calcium every time the neuron fires
+        self.calcium_level = 0  
+        self.beta = 0.001      
 
-        #Ein exzitatorisches Neuron kann nur exzitatorische Stecker bilden, 
-        #ein inhibitorisches Neuron nur inhibitorische Stecker.
+        # Structural elements
+        self.A = 0.0    
+        self.D_ex = 0.0 
+        self.D_in = 0.0 
         
-        #Jedes Neuron (egal ob es selbst erregend oder hemmend ist) kann diese exzitatorischen Steckdosen ausbilden, 
-        #um erregende Signale von anderen Neuronen zu empfangen.
+        self.vac_A = 0     
+        self.vac_D_ex = 0   
+        self.vac_D_in = 0   
 
-        #Jedes Neuron (egal ob es selbst erregend oder hemmend ist) kann diese inhebitorische Steckdosen ausbilden, 
-        #um erregende Signale von anderen Neuronen zu empfangen.
-
-        #Das sind die Zähler für die absolute Gesamtmenge an synaptischen Elementen, die dieses Neuron aktuell besitzt.
-        self.A = 0.0    # Axonal elements
-        self.D_ex = 0.0 # Dendritic elements (excitatory)
-        self.D_in = 0.0 # Dendritic elements (inhibitory)
-        
-
-        # Vakanzen (Ungebundene Elemente, die für neue Synapsen bereitstehen)
-        self.vac_A = 0      # Axonal elements
-        self.vac_D_ex = 0   # Dendritic elements (excitatory)
-        self.vac_D_in = 0   # Dendritic elements (inhibitory)
-
-        # Akkumulatoren für deterministischen Verfall (Paper Eq. 5)
-        # Nu (“v”): Growth factor (is set to 0.001 in the paper)
-        # z_i: Number of synaptic elements of a neuron (not explicitly computed)
-        # dz_i / dt: Growth rate of synaptic elements (calculated by multiplying nu with term that depends on calcium level)
-
+        # Decay accumulators for structural elements
         self.decay_acc_A = 0.0
         self.decay_acc_D_ex = 0.0
         self.decay_acc_D_in = 0.0
         
-        #self.out_synapses = []
-        #self.in_synapses = []
-
-        #gesamte mänge anliegender Spannung
-        
 
     def get_id(self):
+        """returns the id of the neuron"""
         return self.id
     
     def get_coordinates(self):
+        """returns the coordinates of the neuron"""
         return (self.x, self.y)
     
     def get_type(self):
+        """returns the type of the neuron"""
         return self.type
-
-    # TODO import calc.py and use its formula
-
-    #def get_outgoing_synapses(self):
-    #    return self.out_synapses
     
-    #def get_incoming_synapses(self):
-    #    return self.in_synapses
-    
-
     def step_electrical(self, I: float, dt:float = 1.0) -> bool:
         return calc.step_electrical(self, I, dt)
     
@@ -90,9 +64,11 @@ class Neuron:
         return calc.update_structural_elements(self, bound_A, bound_D_ex, bound_D_in, dt)
     
     def is_excitatory(self):
+        """returns True if the neuron is excitatory, False otherwise"""
         return self.type == NeuronType.EXCITATORY
     
     def is_inhibitory(self):
+        """returns True if the neuron is inhibitory, False otherwise"""
         return self.type == NeuronType.INHIBITORY
     
         
@@ -107,11 +83,9 @@ class Synapse:
 class Network:
     def __init__(self, num_neurons: int, excitatory_probability: float = 0.8, inhibitory_probability: float = 0.2, exact_percentage: bool = True):
         self.neurons = []
-        self.excitatory = []
-        self.inhibitory = []
         self.num_neurons = num_neurons
 
-        #Kontrollparameter die von der UI gesteuert werden
+        #parameters for GUI controls
         self.v = 0.0001
         self.I_ext_mean = 5.0
         self.epsilon = 0.7       
@@ -121,60 +95,23 @@ class Network:
         self.eta_D = 0.1
         self.k = 1.0
 
-
-        #gesamt anliegende spannung aller Neuronen
+        #Synaptic current array rpresenting the total synaptic input current for each neuron
         self.I_syn = np.zeros(num_neurons, dtype=float) 
 
-                # Cache für Neuronentypen für schnellere Lookups
+        #Caches for excitatory and inhibitory neuron types
         self._is_excitatory_cache = np.zeros(num_neurons, dtype=bool)
         self._is_inhibitory_cache = np.zeros(num_neurons, dtype=bool)
 
-        types = [0, 1]
+        types = [NeuronType.INHIBITORY, NeuronType.EXCITATORY]
         probabilities = [inhibitory_probability, excitatory_probability]
-        # types = [NeuronType.EXCITATORY, NeuronType.INHIBITORY]
-
-        # was previously a float array (without dtype=int)
-        neuron_types = np.zeros(num_neurons, dtype=int)
-        num_ex = -1
+        
         if exact_percentage:
             num_ex = round(excitatory_probability * num_neurons)
-            neuron_types[:num_ex] = 1 # crashed with Enum Types -> therefore used int values instead
-            neuron_types[num_ex:] = 0 # same here
         else:
-            probabilities = [excitatory_probability, inhibitory_probability]
             neuron_types = np.random.choice(types, size=num_neurons, p=probabilities)
-            num_ex = np.sum(neuron_types == 1) # numpy summing = more efficient (ig)
+            num_ex = np.sum(neuron_types == NeuronType.EXCITATORY) 
 
-        neuron_types.sort()
-        
-        # TODO Distribute inhibitory neurons among excitatory ones (“within limits of excitatory”)
-        # TODO Comply to guidelines regarding excitatory / inhibitory spacing (see discord screenshot)
-        """
-        From the paper: Excitatory neurons were placed with a spatial variance of on a 20×16 grid with
-        a distance between two grid points of . More precisely, the x,y-coordinates of each neuron were
-        derived from a normal distribution (with the chosen spatial variance as standard deviation) that
-        was centered at an individual grid point. For the 80 inhibitory neurons we defined a second 10×8
-        grid positioned in such a way that the inhibitory neurons become equally distributed among the
-        excitatory ones; the precise x,y coordinates were determined as was done for the excitatory neurons.
-        Given that neurons in the adult cortex of rodents [54] are capable of rewiring their axonal branches
-        over a couple of hundred micrometers, the expected distance between neurons of in the model is a
-        plausible choice.
-        """
-        """
-        for i in range(num_neurons):
-            x = np.random.randint(-100, 100)
-            y = np.random.randint(-100, 100)
-            type = neuron_types[i]
-            _temp = Neuron(x, y, i, type)
-            self.neurons.append(_temp)
-            #_temp ist ein pointer der auf die erstelten Objekte zeit
-            if type == NeuronType.EXCITATORY:
-                self.excitatory.append(_temp)
-            else:
-                self.inhibitory.append(_temp)
-        """
-
-        # Extremes of x and y ([x_min, x_max, y_min, y_max])
+    
         extremes = [150, -150, 150, -150]
 
         # Building a collision avoiding grid to store remaining coordinates
@@ -218,65 +155,76 @@ class Network:
             self.neurons.append(neuron)
             self._is_inhibitory_cache[i] = True
                 
-
+        #Synapses are represented as a 2D array where the value at (i, j) represents the number of synapses from neuron i to neuron j
         self.synapses = np.zeros((num_neurons, num_neurons), dtype=int)
         self.kernel = self.calculate_distance_kernel(sigma=self.sigma)
 
 
     def get_neurons(self):
+        """returns the list of neurons in the network"""
         return self.neurons
-    
-    def get_excitatory_neurons(self):
-        return self.excitatory
-    
-    def get_inhibitory_neurons(self):
-        return self.inhibitory
-    
+        
     def get_neuron_count(self):
+        """returns the number of neurons in the network"""
         return self.num_neurons
     
     def get_synapses(self):
+        """returns the list of synapses in the network"""
         return self.synapses
     
     def get_neuron_by_index(self, index: int):
+        """returns the neuron at the given index"""
         return self.neurons[index]
     
 
-    def get_incoming_synapses(self, neuron_index: int):
+    def get_amount_of_incoming_synapses(self, neuron_index: int):
+        """returns the number of incoming synapses for a given neuron"""
         return self.synapses[:, neuron_index]
     
     def get_amount_of_synapses(self, from_index: int, to_index: int):
+        """returns the number of synapses from a given neuron to another"""
         return self.synapses[from_index, to_index]
     
-    def get_outgoing_synapses(self, neuron_index: int):
+    def get_amount_of_outgoing_synapses(self, neuron_index: int):
+        """returns the number of outgoing synapses for a given neuron"""
         return self.synapses[neuron_index, :]
     
     def get_outgoing_synapse_list(self, neuron_index: int) -> list[int]:
-        counts = self.get_outgoing_synapses(neuron_index)
+        """returns a list of neuron indices that the given neuron has outgoing synapses to"""
+        counts = self.get_amount_of_outgoing_synapses(neuron_index)
         return np.repeat(np.arange(self.num_neurons), counts).tolist()
 
     def get_incoming_synapse_list(self, neuron_index: int) -> list[int]:
-        counts = self.get_incoming_synapses(neuron_index)
+        """returns a list of neuron indices that have incoming synapses to the given neuron"""
+        counts = self.get_amount_of_incoming_synapses(neuron_index)
         return np.repeat(np.arange(self.num_neurons), counts).tolist()
 
     def get_incoming_excitatory_source_list(self, neuron_index: int) -> list[int]:
-        counts = self.get_incoming_synapses(neuron_index)
+        """returns a list of neuron indices that have incoming excitatory synapses to the given neuron"""
+        counts = self.get_amount_of_incoming_synapses(neuron_index)
         ex_counts = counts * self._is_excitatory_cache
         return np.repeat(np.arange(self.num_neurons), ex_counts).tolist()
 
     def get_incoming_inhibitory_source_list(self, neuron_index: int) -> list[int]:
-        counts = self.get_incoming_synapses(neuron_index)
+        """returns a list of neuron indices that have incoming inhibitory synapses to the given neuron"""
+        counts = self.get_amount_of_incoming_synapses(neuron_index)
         in_counts = counts * self._is_inhibitory_cache
         return np.repeat(np.arange(self.num_neurons), in_counts).tolist()
 
-    def get_bound_dendrites(self, neuron_index: int) -> tuple[int, int]:
-        in_counts = self.get_incoming_synapses(neuron_index)
+    def get_amount_of_bound_dendrites(self, neuron_index: int) -> tuple[int, int]:
+        """returns the number of bound dendrites for a given neuron"""
+        in_counts = self.get_amount_of_incoming_synapses(neuron_index)
         bound_d_ex = np.sum(in_counts[self._is_excitatory_cache])
         bound_d_in = np.sum(in_counts[self._is_inhibitory_cache])
         return bound_d_ex, bound_d_in
     
+    def get_amount_of_bound_axons(self, neuron_index: int) -> int:
+        """returns the number of bound axons for a given neuron"""
+        bound_a = np.sum(self.get_amount_of_outgoing_synapses(neuron_index))
+        return bound_a
+    
     def update_synapses(self, _from: int | np.ndarray, to: int | np.ndarray, change_value: int):
-        # Update synapses array of the network
+        """updates the number of synapses from a given neuron to another"""
         self.synapses[_from, to] += change_value
 
         # Converting “from” and “to” list to arrays
@@ -297,35 +245,16 @@ class Network:
             else:
                 receiver.vac_D_in -= change_value
 
-        """for f, t in zip(from_iter, to_iter):
-            f_idx, t_idx = int(f), int(t)
-            f_neuron = self.get_neuron_by_index(f_idx)
-            t_neuron = self.get_neuron_by_index(t_idx)
-            
-            if value:
-                if t_idx not in f_neuron.out_synapses:
-                    f_neuron.out_synapses.append(t_idx)
-                if f_idx not in t_neuron.in_synapses:
-                    t_neuron.in_synapses.append(f_idx)
-            else:
-                if t_idx in f_neuron.out_synapses:
-                    f_neuron.out_synapses.remove(t_idx)
-                if f_idx in t_neuron.in_synapses:
-                    t_neuron.in_synapses.remove(f_idx)"""
-
-    
-
     def calculate_distance_kernel(self, sigma: float = 5.0 * 150.0):
         return calc.calculate_distance_kernel(self, sigma)
         
     def structural_plasticity_step(self):
         calc.structural_plasticity_step(self)
     
-
-    
     def get_connection_indices(self):
         """returns the (from, to) index of all synapses"""
         return np.argwhere(self.synapses != 0)
+    
     def get_undirected_connection_indices(self):
         """returns the (from, to) index of all synapses, but only one direction"""
         combined_matrix = self.synapses + self.synapses.T

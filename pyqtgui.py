@@ -8,14 +8,17 @@ from currentgraph import currentgraph
 from objects import NeuronType, Neuron
 import time
 
-# global variable for dark mode
-dark_mode = True
+global DARK_MODE
+global GUI_FPS
 
-# Settings for dark mode
+DARK_MODE = True
+GUI_FPS = 20
+
 def get_dark_palette():
+    """Returns a QPalette configured for dark mode"""
     dark_palette = QPalette()
         
-    # background colors
+    # background colours
     dark_palette.setColor(QPalette.ColorRole.Window, QColor(30, 30, 30))
     dark_palette.setColor(QPalette.ColorRole.WindowText, QColor(220, 220, 220))
     dark_palette.setColor(QPalette.ColorRole.Base, QColor(20, 20, 20))
@@ -28,7 +31,7 @@ def get_dark_palette():
     dark_palette.setColor(QPalette.ColorRole.Button, QColor(45, 45, 45))
     dark_palette.setColor(QPalette.ColorRole.ButtonText, QColor(220, 220, 220))
         
-    # accent colors
+    # accent colours
     dark_palette.setColor(QPalette.ColorRole.Highlight, QColor(0, 120, 215)) # Ein schönes Blau
     dark_palette.setColor(QPalette.ColorRole.HighlightedText, QColor(255, 255, 255))
         
@@ -39,46 +42,41 @@ def get_dark_palette():
     return dark_palette
 
 def get_white_palette():
+    """Returns a QPalette configured for light mode"""
     return QApplication.style().standardPalette()
 
 class guilauncher(QMainWindow):
     def __init__(self):
         super().__init__()
 
-        global dark_mode
-
-        # Initializing window
+        # Initialising window
         self.setWindowTitle("RELeARN - Launcher")
         self.resize(300, 125)
         self.setMaximumSize(300, 125)
 
+        # Apply Fusion style
         fusion_style = QStyleFactory.create("Fusion")
         if fusion_style:
             QApplication.instance().setStyle(fusion_style)
 
         # Setting dark mode as default
-        if dark_mode:
+        if DARK_MODE:
             QApplication.instance().setPalette(get_dark_palette())
         else:
             QApplication.instance().setPalette(get_white_palette())
 
+        # Creating central widget
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
         layout = QVBoxLayout(central_widget)
 
+        # Setting window icon
         self.setWindowIcon(QIcon('launch.png'))
-
-        #neuron_layout = QHBoxLayout()
-        #neuron_layout.addWidget(QLabel("Number of Neurons:"))
-        #self.input_neurons = QLineEdit()
-        #self.input_neurons.setPlaceholderText("100")
-        #neuron_layout.addWidget(self.input_neurons)
-        #layout.addLayout(neuron_layout)
-        
-        # doesn't toggle, just activates bad dark mode
+ 
+        # Doesn't toggle, just activates bad dark mode
         self.dark_mode_btn = QPushButton("Toggle Dark Mode")
         self.dark_mode_btn.setCheckable(True)
-        self.dark_mode_btn.setChecked(dark_mode)
+        self.dark_mode_btn.setChecked(DARK_MODE)
         self.dark_mode_btn.setMaximumSize(300, 50)
         self.dark_mode_btn.clicked.connect(self.toggle_dark_mode)
         layout.addWidget(self.dark_mode_btn)
@@ -87,23 +85,23 @@ class guilauncher(QMainWindow):
         self.add_line(layout, "Number of Neurons:", "input_neurons", "10", True)
         self.add_line(layout, "Percentage of excitatory Neurons (%):", "input_exc", "80", True)
 
-        #self.add_line(layout, "Growth Rate", "input_growth", "1", True)
-
-        # Adding buttons
+        # Adding start button
         self.start_button = QPushButton("Start Simulation")
         self.start_button.setStyleSheet("background-color: green; color: black; font: bold 14px;")
         self.start_button.setMaximumSize(300, 50)
-        # start implementing the connection logic
         self.start_button.clicked.connect(self.start_sim)
         layout.addWidget(self.start_button)
 
+        # Adding exit button
         self.exit_button = QPushButton("Exit")
         self.exit_button.setStyleSheet("background-color: #A82424; color: black; font: bold 14px;")
         self.exit_button.setMaximumSize(300, 50)
         self.exit_button.clicked.connect(self.close)
         layout.addWidget(self.exit_button)
     
+
     def add_line(self, goal_layout, label_text: str, attribute_name: str, default_val: str, horizontal: bool):
+        """Adding labelled input field and returning the instance"""
         if horizontal:
             new_layout = QHBoxLayout()
         else:
@@ -111,7 +109,6 @@ class guilauncher(QMainWindow):
         new_label = QLabel(label_text)
         new_font = new_label.font()
         new_font.setBold(True)
-        #new_font.setPointSize(14)
         new_label.setFont(new_font)
         new_layout.addWidget(new_label)
         
@@ -128,25 +125,24 @@ class guilauncher(QMainWindow):
     
     
     def handle_input(self):
+        """Handling input values for neuron count and excitatory percentage"""
         user_input_neurons = int(self.input_neurons.text() or self.input_neurons.placeholderText())
         user_input_excitatory = int(self.input_exc.text() or self.input_exc.placeholderText())
-
-        #user_input_growth = int(self.input_growth.text() or self.input_growth.placeholderText())
         return user_input_neurons, user_input_excitatory
 
-    # start implementing the connection logic
     def start_sim(self):
+        """Starting simulation"""
         input = self.handle_input()
-        #print(output[0], output[1])
-        self.sim_gui = simulation(dark_mode, input[0], input[1])
+        self.sim_gui = simulation(DARK_MODE, input[0], input[1])
         self.sim_gui.show()
         self.close()
 
 
-    # not toggling yet, just applying dark mode, default values become invisible :/
+    # Not toggling yet, just applying dark mode, default values become invisible :/
     def toggle_dark_mode(self, checked: bool):
-        global dark_mode
-        dark_mode = checked
+        """Toggle between dark and light mode"""
+        global DARK_MODE
+        DARK_MODE = checked
 
         if checked:
             cur_palette = get_dark_palette()
@@ -156,8 +152,9 @@ class guilauncher(QMainWindow):
         QApplication.instance().setPalette(cur_palette)
 
 class SimulationWorker(QObject):
-
+    """Worker class to handle the simulation in a separate thread."""
     def __init__(self, graph, mutex):
+
         super().__init__()
         self.graph = graph
         self.mutex = mutex
@@ -165,10 +162,11 @@ class SimulationWorker(QObject):
         self._is_paused = False
         self.time_counter = 0
         self.counter = 0
-        self.speed_controle = 100
+        self.speed_control = 100
 
     @pyqtSlot()
     def run(self):
+        """Main simulation loop."""
         self._is_running = True
         while self._is_running:
             if self._is_paused:
@@ -183,16 +181,15 @@ class SimulationWorker(QObject):
                 self.graph.update_slow_processes()
             self.mutex.unlock()
 
-            if self.speed_controle > 0:
+            if self.speed_control > 0:
 
-                wait_seconds = (self.speed_controle / 100.0) / 1000.0 
+                wait_seconds = (self.speed_control / 100.0) / 1000.0 
                 target_time = time.perf_counter() + wait_seconds
                 
                 while time.perf_counter() < target_time:
                     QThread.yieldCurrentThread()
             else:
                 pass
-                #QThread.yieldCurrentThread()
 
 
     @pyqtSlot()
@@ -202,37 +199,27 @@ class SimulationWorker(QObject):
 
     @pyqtSlot()
     def pause(self):
+        """Pauses the simulation loop."""
         self._is_paused = True
 
     @pyqtSlot()
     def resume(self):
+        """Resumes the simulation loop."""
         self._is_paused = False
 
 
 class simulation(QMainWindow):
+    """Main GUI class for the simulation."""
     def __init__(self, is_dark_mode: bool, neuron_count: int, exc_count: int):
         super().__init__()
 
         self.mutex = QMutex()
 
         # Initialising currentgraph
-        # TODO Seems to fail when entering 500 for the number of neurons (in the launcher)
         self.graph = currentgraph(neuron_count, exc_count/100, (100-exc_count)/100)
         self.neurons = self.graph.neurons
 
-
-
-        # Test
-        # TODO Remove
-        """for neuron in self.neurons:
-            neuron.A = 4
-            neuron.D_ex = 6
-            neuron.D_in = 6
-
-            neuron.vac_A = 4
-            neuron.vac_D_ex = 6
-            neuron.vac_D_in = 6
-        """
+        #Initializing synaptic elements for each neuron if desired.
         for neuron in self.neurons:
             neuron.A = 0
             neuron.D_ex = 0
@@ -241,26 +228,15 @@ class simulation(QMainWindow):
             neuron.vac_A = 0
             neuron.vac_D_ex = 0
             neuron.vac_D_in = 0
-
-
-        # Configs
-        
+      
         pg.setConfigOptions(antialias=True)
-        
         self.setWindowTitle("RELeARN - Structural Plasiticity Simulation")
         self.resize(800, 600)
-
         self.setWindowIcon(QIcon('plasticity.jpg'))
-
-
-        # Central Widget
-        
+    
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
         layout = QVBoxLayout(central_widget)
-
-
-        # Plot
 
         self.plot_widget = pg.GraphicsLayoutWidget()
 
@@ -276,8 +252,6 @@ class simulation(QMainWindow):
 
         self.view.scene().sigMouseClicked.connect(self.on_view_clicked)
 
-        # Neuron Layer
-        
         self.network_graph = pg.GraphItem()
         self.synapse_lines = pg.GraphItem()
         self.calcium_text_item = None
@@ -288,30 +262,22 @@ class simulation(QMainWindow):
         self.view.addItem(self.synapse_lines)
         self.view.addItem(self.network_graph)
 
-
-        # Synaptic Elements Layer
-
-        # Excitatory Dendritic Spines
+        #Excitatory Dendritic Spines
         self.ex_spines = pg.ScatterPlotItem(size=2, symbol='s', brush=(231, 76, 60), pen=None, pxMode=False)
 
-        # Inhibitory Dendritic Spines
+        #Inhibitory Dendritic Spines
         self.in_spines = pg.ScatterPlotItem(size=2, symbol='s', brush=(46, 0, 213), pen=None, pxMode=False)
 
-        # Axonal Boutons
+        #Axonal Boutons
         self.axons = pg.ScatterPlotItem(size=2, symbol='t', brush=(255, 255, 0), pen=None, pxMode=False)
 
         self.view.addItem(self.ex_spines)
         self.view.addItem(self.in_spines)
         self.view.addItem(self.axons)
 
-
-        # Initial Render
-
         self.spawn_neurons()
 
-
-        # Legend
-
+        #Legend
         ex_neuron_symbol = pg.ScatterPlotItem(symbol = 'o', brush = (231, 76, 60), pen=None)
         in_neuron_symbol = pg.ScatterPlotItem(symbol = 'o', brush = (46, 0, 213), pen=None)
 
@@ -324,9 +290,6 @@ class simulation(QMainWindow):
         legend.addItem(self.in_spines, 'Inhibitory Spine')
         legend.addItem(self.axons, 'Axons')
 
-
-
-        self.GUI_FPS = 20  
         self.simulation_timer = QTimer()
 
         self.thread = QThread()
@@ -337,10 +300,9 @@ class simulation(QMainWindow):
         self.simulation_timer.timeout.connect(self.fetch_and_update_gui)
 
         self.thread.start()
-        self.simulation_timer.start(1000 // self.GUI_FPS)
+        self.simulation_timer.start(1000 // GUI_FPS)
 
-
-        # Timer
+        #Timer
         self.elapsed_ms = 0 
         self.time_overlay = QLabel("00:00.0", self.plot_widget)
         self.time_overlay.setStyleSheet("""
@@ -351,7 +313,7 @@ class simulation(QMainWindow):
             font-weight: bold;
             padding: 8px;
         """)
-        # Timer Speedup
+        #Timer Speedup
         
         timer_speed_layout = QHBoxLayout()
 
@@ -374,7 +336,6 @@ class simulation(QMainWindow):
 
 
         # Timer Player
-
         timer_btn_layout = QHBoxLayout()
 
         self.timer_rewind_btn = QPushButton("⏮")
@@ -387,7 +348,6 @@ class simulation(QMainWindow):
         self.timer_pause_btn.setStyleSheet("background-color: green; color: black; font: bold 20px;")
         timer_btn_layout.addWidget(self.timer_pause_btn)
 
-
         self.timer_forward_btn = QPushButton("⏭")
         self.timer_forward_btn.clicked.connect(self.forward_time)
         self.timer_forward_btn.setStyleSheet("background-color: grey; color: white; font: bold 20px;")
@@ -395,10 +355,6 @@ class simulation(QMainWindow):
 
         layout.addLayout(timer_btn_layout)
 
-
-
-        # More Buttons
-                
         button_layout = QHBoxLayout()
         
         self.return_button = QPushButton("Return to Launcher")
@@ -413,14 +369,12 @@ class simulation(QMainWindow):
 
         layout.addLayout(button_layout)
 
-
-
-        # Container for the collapsible controls
+        #Container for the collapsible controls
         self.controls_container = QWidget()
         controls_layout = QVBoxLayout(self.controls_container)
         controls_layout.setContentsMargins(0, 0, 0, 0) # Remove margins for a compact view
 
-        # Button to toggle controls
+        #Button to toggle controls
         self.toggle_controls_btn = QPushButton("▶ Expand Parameters")
         self.toggle_controls_btn.setCheckable(True)
         self.toggle_controls_btn.setChecked(True) # Startet eingeklappt
@@ -509,8 +463,8 @@ class simulation(QMainWindow):
         
         self.toggle_controls(True) 
         
-
     def toggle_controls(self, checked):
+        """Toggles the visibility of the controls container."""
         if checked:
             self.controls_container.setVisible(False)
             self.toggle_controls_btn.setText("▶ Expand Parameters")
@@ -519,53 +473,63 @@ class simulation(QMainWindow):
             self.toggle_controls_btn.setText("▼ Collapse Parameters")
 
     def update_I_ext_mean(self, value):
+        """Updates the external input mean."""
         val = value / 10.0
         self.graph.network.I_ext_mean = val
         self.I_ext_label.setText(f"External Input (I_ext_mean): {val:.1f} mV/ms")
 
     def update_v(self, value):
+        """Updates the growth rate."""
         val = value / 10000.0
         self.graph.network.v = val
         
         self.v_label.setText(f"Growth Rate (v): {val:.4f}")
 
     def update_epsilon(self, value):
+        """Updates the stress set-point."""
         float_val = value / 100.0
         self.graph.network.epsilon = float_val
         self.eps_label.setText(f"Stress Set-Point (epsilon): {float_val:.2f}")
 
     def update_tau_ca(self, value):
+        """Updates the calcium decay."""
         val = float(value)
         self.graph.network.tau_ca = val
         self.tau_label.setText(f"Calcium Decay (tau_Ca): {val:.0f} ms")
 
     def update_sigma(self, value):
+        """Updates the distance kernel."""
         val = value * 50
         self.graph.network.sigma = val
         self.sigma_label.setText(f"Kernel Range (sigma): {val:.0f} µm")
         self.graph.network.kernel = self.graph.network.calculate_distance_kernel(sigma=val)
 
     def update_eta_a(self, value):
+        """Updates the maximum calcium level for axons."""
         val = value / 100.0
         self.graph.network.eta_A = val
         self.eta_a_label.setText(f"Max Ca for Axons (eta_A): {val:.2f}")
 
     def update_eta_d(self, value):
+        """Updates the maximum calcium level for dendrites."""
         val = value / 100.0
         self.graph.network.eta_D = val
         self.eta_d_label.setText(f"Max Ca for Dendrites (eta_D): {val:.2f}")
 
     def update_k(self, value):
+        """Updates the synapse conductance."""
         val = value / 100.0  # Scale the integer value from the slider to a float
         self.graph.network.k = val
         self.k_label.setText(f"Synapse Conductance (k): {val:.2f}")
 
     def update_speed_control(self, value):
-        self.worker.speed_controle = value
+        """Updates the simulation speed control."""
+        self.worker.speed_control = value
         self.timer_speed_txt.setText(f"Simulation Delay: {value}")
 
 
     def update_gui_elements(self, adj, ax_x, ax_y, exc_x, exc_y, inh_x, inh_y, counter):
+        """Updates the GUI elements."""
         self.mutex.lock()
         self.elapsed_ms = counter
         self.draw_synapses(adj)
@@ -579,6 +543,7 @@ class simulation(QMainWindow):
         self.mutex.unlock()
 
     def fetch_and_update_gui(self):
+        """Fetches data from the graph and updates the GUI."""
         self.mutex.lock()
         ax_x, ax_y, exc_x, exc_y, inh_x, inh_y = self.graph.update_synaptic_elements()
         active_synapses = self.graph.get_active_synapses()
@@ -588,6 +553,7 @@ class simulation(QMainWindow):
         self.update_gui_elements(active_synapses, ax_x, ax_y, exc_x, exc_y, inh_x, inh_y, counter_val) 
         
     def display_time(self):
+        """Displays the elapsed time."""
         total_seconds = self.elapsed_ms // 1000
         minutes = total_seconds // 60
         seconds = total_seconds % 60
@@ -596,6 +562,7 @@ class simulation(QMainWindow):
 
 
     def rewind_time(self):
+        """Rewinds the simulation time."""
         if self.elapsed_ms < 1000:
             self.elapsed_ms = 0
         else:
@@ -603,12 +570,12 @@ class simulation(QMainWindow):
         self.display_time()
 
     def forward_time(self):
+        """Forwards the simulation time."""
         self.elapsed_ms += 10000
         self.display_time()
 
-    # Toggle Pause/Resume Button for Simulation
-
     def toggle_simulation(self):
+        """Toggles the simulation."""
         if self.simulation_timer.isActive():
             self.worker.pause()
             self.simulation_timer.stop()
@@ -626,17 +593,13 @@ class simulation(QMainWindow):
         event.accept()
 
 
-    # Spawn Neurons (based on User Input)
-
     def spawn_neurons(self):
-
+        """Spawn Neurons (based on User Input)"""
         # Positions of the Neurons
-        
         pos = self.graph.neuron_positions
         
 
         # Types of the Neurons
-
         TYPE_CONFIG = {
             NeuronType.EXCITATORY: {"symbol": "o", "brush": (231, 76, 60)},
             NeuronType.INHIBITORY: {"symbol": "o", "brush": (46, 0, 213)},
@@ -644,13 +607,11 @@ class simulation(QMainWindow):
 
 
         # Plotting Data
-
         symbols = [TYPE_CONFIG[NeuronType(int(getattr(n.type, 'value', n.type)))]["symbol"] for n in self.neurons]
         colors  = [TYPE_CONFIG[NeuronType(int(getattr(n.type, 'value', n.type)))]["brush"] for n in self.neurons]
 
 
         # Plotting
-
         self.network_graph.setData(pos=pos, pen=pg.mkPen(color=(150, 150, 150), width=2), size=12, symbol=symbols, symbolBrush=colors, symbolPen=None, pxMode=False)
 
         empty_adj = np.empty((0, 2), dtype=int)
@@ -661,11 +622,13 @@ class simulation(QMainWindow):
     
 
     def draw_synaptic_elements(self, ax_x, ax_y, exc_x, exc_y, inh_x, inh_y):
+        """Draws the synaptic elements."""
         self.axons.setData(x = ax_x, y = ax_y)
         self.ex_spines.setData(x = exc_x, y = exc_y)
         self.in_spines.setData(x = inh_x, y = inh_y)
 
     def draw_synapses(self, active_synapses):
+        """Draws the synapses."""
         pos = self.graph.neuron_positions
         pen_color = (120, 120, 120, 100)
 
@@ -688,21 +651,17 @@ class simulation(QMainWindow):
 
         self.synapse_lines.setData(pos=pos, adj=active_synapses, pen=pg.mkPen(color=pen_color, width=1.5), size=0, symbol='o')
 
-
-    # TODO Implement firing visualization
-    def update_firing_neurons(self):
-        return
-
     def return_to_launcher(self):
+        """Return to the launcher."""
         self.launcher = guilauncher()
         self.launcher.show()
-        # Properly close the current simulation window and its thread
         self.worker.stop()
         self.thread.quit()
         self.thread.wait()
         self.close()
     
     def on_view_clicked(self, event):
+        """Handles clicks on the view."""
         points = self.network_graph.scatter.pointsAt(event.pos())
         if len(points) == 0:
             if self.calcium_text_item:
@@ -711,6 +670,7 @@ class simulation(QMainWindow):
                 self.selected_neuron_index = None
 
     def on_neuron_clicked(self, scatter_item, points):
+        """Handles clicks on neurons."""
         if not points:
             self.view.removeItem(self.calcium_text_item)
             return
