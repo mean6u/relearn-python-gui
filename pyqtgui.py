@@ -163,7 +163,6 @@ class SimulationWorker(QObject):
         self.time_counter = 0
         self.counter = 0
         self.speed_control = 100
-        self.spiked_index = []
 
     @pyqtSlot()
     def run(self):
@@ -220,15 +219,7 @@ class simulation(QMainWindow):
         self.graph = currentgraph(neuron_count, exc_count/100, (100-exc_count)/100)
         self.neurons = self.graph.neurons
 
-        #Initializing synaptic elements for each neuron if desired.
-        for neuron in self.neurons:
-            neuron.A = 0
-            neuron.D_ex = 0
-            neuron.D_in = 0
-
-            neuron.vac_A = 0
-            neuron.vac_D_ex = 0
-            neuron.vac_D_in = 0
+        
       
         pg.setConfigOptions(antialias=True)
         self.setWindowTitle("RELeARN - Structural Plasiticity Simulation")
@@ -272,21 +263,28 @@ class simulation(QMainWindow):
         #Axonal Boutons
         self.axons = pg.ScatterPlotItem(size=2, symbol='t', brush=(255, 255, 0), pen=None, pxMode=False)
 
+        #Spiking Neurons
+        self.spike_overlay = pg.ScatterPlotItem(size=12, symbol="o", brush=pg.mkBrush(255, 230, 0, 220), pen=pg.mkPen(255, 255, 0, 255, width=2), pxMode=False)
+        self.spike_overlay.setZValue(10)
+  
+
         self.view.addItem(self.ex_spines)
         self.view.addItem(self.in_spines)
         self.view.addItem(self.axons)
+        self.view.addItem(self.spike_overlay)
 
         self.spawn_neurons()
 
         #Legend
         ex_neuron_symbol = pg.ScatterPlotItem(symbol = 'o', brush = (231, 76, 60), pen=None)
         in_neuron_symbol = pg.ScatterPlotItem(symbol = 'o', brush = (46, 0, 213), pen=None)
-
+        spiking_neuron_symbol = pg.ScatterPlotItem(symbol = 'o', brush = (255, 230, 0), pen=None)
 
         legend = pg.LegendItem((80,60), offset=(0,0))
         legend.setParentItem(self.view)
         legend.addItem(ex_neuron_symbol, 'Excitatory Neuron')
         legend.addItem(in_neuron_symbol, 'Inhibitory Neuron')
+        legend.addItem(spiking_neuron_symbol, 'Spiking Neuron')
         legend.addItem(self.ex_spines, 'Excitatory Spine')
         legend.addItem(self.in_spines, 'Inhibitory Spine')
         legend.addItem(self.axons, 'Axons')
@@ -536,6 +534,7 @@ class simulation(QMainWindow):
         self.elapsed_ms = counter
         self.draw_synapses(adj)
         self.draw_synaptic_elements(ax_x, ax_y, exc_x, exc_y, inh_x, inh_y)
+        self.draw_spiking_neurons()
         self.display_time()
 
         if self.selected_neuron_index is not None and self.calcium_text_item:
@@ -638,6 +637,16 @@ class simulation(QMainWindow):
                     self.synapse_count_texts.append(text)
 
         self.synapse_lines.setData(pos=pos, adj=active_synapses, pen=pg.mkPen(color=pen_color, width=1.5), size=0, symbol='o')
+
+    def draw_spiking_neurons(self):
+        spiking_neurons = self.graph.spiked_index
+
+        if not spiking_neurons:
+            return
+        
+        positions = self.graph.neuron_positions[spiking_neurons]
+        self.spike_overlay.setData(pos=positions)
+        QTimer.singleShot(100, lambda: self.spike_overlay.setData(pos=[]))
 
     def return_to_launcher(self):
         """Return to the launcher."""
