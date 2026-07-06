@@ -73,7 +73,6 @@ class guilauncher(QMainWindow):
         # Setting window icon
         self.setWindowIcon(QIcon('launch.png'))
  
-        # Doesn't toggle, just activates bad dark mode
         self.dark_mode_btn = QPushButton("Toggle Dark Mode")
         self.dark_mode_btn.setCheckable(True)
         self.dark_mode_btn.setChecked(DARK_MODE)
@@ -380,7 +379,7 @@ class simulation(QMainWindow):
         layout.addWidget(self.controls_container)
 
         # Slider for external input current
-        self.I_ext_label = QLabel(f"External Input (I_ext_mean): {self.graph.network.I_ext_mean:.1f} mV/ms")
+        self.I_ext_label = QLabel(f"External Input (I<sub>ext, mean</sub>): {self.graph.network.I_ext_mean:.1f} mV/ms")
         self.I_ext_slider = QSlider(Qt.Orientation.Horizontal)
         self.I_ext_slider.setMinimum(0)   # Corresponds to 0.0 mV/ms
         self.I_ext_slider.setMaximum(150) # Corresponds to 15.0 mV/ms
@@ -390,7 +389,7 @@ class simulation(QMainWindow):
         self.I_ext_slider.setValue(int(self.graph.network.I_ext_mean * 10))
 
         # Slider for growth rate
-        self.v_label = QLabel(f"Growth Rate (v): {self.graph.network.v:.4f}")
+        self.v_label = QLabel(f"Growth Rate (\u03bd): {self.graph.network.v:.4f}")
         self.v_slider = QSlider(Qt.Orientation.Horizontal)
         self.v_slider.setMinimum(1)
         self.v_slider.setMaximum(500)
@@ -400,7 +399,7 @@ class simulation(QMainWindow):
         controls_layout.addWidget(self.v_slider)
 
         # Slider for stress set point
-        self.eps_label = QLabel(f"Stress Set-Point (epsilon): {self.graph.network.epsilon:.2f}")
+        self.eps_label = QLabel(f"Stress Set-Point (\u03b5): {self.graph.network.epsilon:.2f}")
         self.eps_slider = QSlider(Qt.Orientation.Horizontal)
         self.eps_slider.setMinimum(30)   
         self.eps_slider.setMaximum(150)  
@@ -410,7 +409,7 @@ class simulation(QMainWindow):
         controls_layout.addWidget(self.eps_slider)
 
         # Slider for Calcium Decay (Tau_Ca)
-        self.tau_label = QLabel(f"Calcium Decay (tau_Ca): {self.graph.network.tau_ca:.0f} ms")
+        self.tau_label = QLabel(f"Calcium Decay (\u03c4<sub>Ca</sub>): {self.graph.network.tau_ca:.0f} ms")
         self.tau_slider = QSlider(Qt.Orientation.Horizontal)
         self.tau_slider.setMinimum(100)   # Corresponds to 1000 ms
         self.tau_slider.setMaximum(15000) # Corresponds to 15000 ms
@@ -420,7 +419,7 @@ class simulation(QMainWindow):
         controls_layout.addWidget(self.tau_slider)
 
         # Slider for Distance Kernel (Sigma)
-        self.sigma_label = QLabel(f"Kernel Range (Sigma): {self.graph.network.sigma:.0f} µm")
+        self.sigma_label = QLabel(f"Kernel Range (\u03c3): {self.graph.network.sigma:.0f} µm")
         self.sigma_slider = QSlider(Qt.Orientation.Horizontal)
         self.sigma_slider.setMinimum(2)   # Corresponds to 100
         self.sigma_slider.setMaximum(50)  # Corresponds to 2500
@@ -430,7 +429,7 @@ class simulation(QMainWindow):
         controls_layout.addWidget(self.sigma_slider)
 
         # Slider for eta_A (Axon)
-        self.eta_a_label = QLabel(f"Max Ca for Axons (eta_A): {self.graph.network.eta_A:.2f}")
+        self.eta_a_label = QLabel(f"Max Ca for Axons (\u03b7<sub>A</sub>): {self.graph.network.eta_A:.2f}")
         self.eta_a_slider = QSlider(Qt.Orientation.Horizontal)
         self.eta_a_slider.setMinimum(0)  # Corresponds to 0.0
         self.eta_a_slider.setMaximum(80)   # Corresponds to 0.8
@@ -440,7 +439,7 @@ class simulation(QMainWindow):
         controls_layout.addWidget(self.eta_a_slider)
 
         # Slider for eta_D (Dendrite)
-        self.eta_d_label = QLabel(f"Max Ca for Dendrites (eta_D): {self.graph.network.eta_D:.2f}")
+        self.eta_d_label = QLabel(f"Max Ca for Dendrites (\u03b7<sub>D</sub>): {self.graph.network.eta_D:.2f}")
         self.eta_d_slider = QSlider(Qt.Orientation.Horizontal)
         self.eta_d_slider.setMinimum(0)   # Corresponds to 0.0
         self.eta_d_slider.setMaximum(80)  # Corresponds to 0.8
@@ -474,45 +473,45 @@ class simulation(QMainWindow):
         """Updates the external input mean"""
         val = value / 10.0
         self.graph.network.I_ext_mean = val
-        self.I_ext_label.setText(f"External Input (I_ext_mean): {val:.1f} mV/ms")
+        self.I_ext_label.setText(f"External Input (I<sub>ext, mean</sub>): {val:.1f} mV/ms")
 
     def update_v(self, value):
         """Updates the growth rate"""
         val = value / 10000.0
         self.graph.network.v = val
         
-        self.v_label.setText(f"Growth Rate (v): {val:.4f}")
+        self.v_label.setText(f"Growth Rate (\u03bd): {val:.4f}")
 
     def update_epsilon(self, value):
         """Updates the stress set-point"""
         float_val = value / 100.0
         self.graph.network.epsilon = float_val
-        self.eps_label.setText(f"Stress Set-Point (epsilon): {float_val:.2f}")
+        self.eps_label.setText(f"Stress Set-Point (\u03b5): {float_val:.2f}")
 
     def update_tau_ca(self, value):
         """Updates the calcium decay"""
         val = float(value)
         self.graph.network.tau_ca = val
-        self.tau_label.setText(f"Calcium Decay (tau_Ca): {val:.0f} ms")
+        self.tau_label.setText(f"Calcium Decay (\u03c4<sub>Ca</sub>): {val:.0f} ms")
 
     def update_sigma(self, value):
         """Updates the distance kernel"""
         val = value * 50
         self.graph.network.sigma = val
-        self.sigma_label.setText(f"Kernel Range (sigma): {val:.0f} µm")
+        self.sigma_label.setText(f"Kernel Range (\u03c3): {val:.0f} µm")
         self.graph.network.kernel = self.graph.network.calculate_distance_kernel(sigma=val)
 
     def update_eta_a(self, value):
         """Updates the maximum calcium level for axons"""
         val = value / 100.0
         self.graph.network.eta_A = val
-        self.eta_a_label.setText(f"Max Ca for Axons (eta_A): {val:.2f}")
+        self.eta_a_label.setText(f"Max Ca for Axons (\u03b7<sub>A</sub>): {val:.2f}")
 
     def update_eta_d(self, value):
         """Updates the maximum calcium level for dendrites"""
         val = value / 100.0
         self.graph.network.eta_D = val
-        self.eta_d_label.setText(f"Max Ca for Dendrites (eta_D): {val:.2f}")
+        self.eta_d_label.setText(f"Max Ca for Dendrites (\u03b7<sub>D</sub>): {val:.2f}")
 
     def update_k(self, value):
         """Updates the synapse conductance"""
