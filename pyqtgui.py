@@ -189,7 +189,7 @@ class SimulationWorker(QObject):
                 while time.perf_counter() < target_time:
                     QThread.yieldCurrentThread()
             else:
-                pass
+                QThread.yieldCurrentThread()
 
 
     @pyqtSlot()
