@@ -175,7 +175,7 @@ class SimulationWorker(QObject):
             
             self.mutex.lock()
             self.time_counter += 1
-            self.spiked_index = self.graph.update_fast_processes()
+            self.graph.update_fast_processes()
 
             if self.time_counter % 100 == 0:
                 self.graph.update_slow_processes()
@@ -639,9 +639,9 @@ class simulation(QMainWindow):
         self.synapse_lines.setData(pos=pos, adj=active_synapses, pen=pg.mkPen(color=pen_color, width=1.5), size=0, symbol='o')
 
     def draw_spiking_neurons(self):
-        spiking_neurons = self.graph.spiked_index
+        spiking_neurons = self.graph.spiked_indices
 
-        if not spiking_neurons:
+        if len(spiking_neurons) == 0:
             return
         
         positions = self.graph.neuron_positions[spiking_neurons]

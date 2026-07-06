@@ -139,7 +139,7 @@ class currentgraph():
         self.update_synapses()
         
     def update_fast_processes(self):
-        self.spiked_index = calc.electrical_activity_step(self.network)
+        self.spiked_indices = calc.electrical_activity_step(self.network)
 
     def update_synapses(self):
         self.synapses = self.network.synapses
