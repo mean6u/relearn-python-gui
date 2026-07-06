@@ -252,8 +252,8 @@ class simulation(QMainWindow):
         self.selected_neuron_index = None  
         self.network_graph.scatter.sigClicked.connect(self.on_neuron_clicked)
         
-        self.view.addItem(self.synapse_lines)
         self.view.addItem(self.network_graph)
+        self.view.addItem(self.synapse_lines)
         
         #Excitatory Dendritic Spines
         self.ex_spines = pg.ScatterPlotItem(size=2, symbol='s', brush=(231, 76, 60), pen=None, pxMode=False)
