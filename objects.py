@@ -100,7 +100,6 @@ class Network:
             neuron_types = np.random.choice(types, size=num_neurons, p=probabilities)
             num_ex = np.sum(neuron_types == NeuronType.EXCITATORY) 
 
-        # TODO: With dynamic size, it seems as if the distances of the neutrons become too large so the kernel's probability becomes too low -> no synapses
         dynamic_size = 15*num_neurons
         extremes = [dynamic_size, -dynamic_size, dynamic_size, -dynamic_size]
 

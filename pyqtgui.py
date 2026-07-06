@@ -158,7 +158,7 @@ class SimulationWorker(QObject):
         self.graph = graph
         self.mutex = mutex
         self._is_running = False
-        self._is_paused = False
+        self._is_paused = True
         self.time_counter = 0
         self.counter = 0
         self.speed_control = 100
@@ -669,7 +669,7 @@ class simulation(QMainWindow):
         neuron = self.graph.network.get_neuron_by_index(self.selected_neuron_index)
 
         if not self.calcium_text_item:
-            self.calcium_text_item = pg.TextItem("", color=(220, 220, 220), anchor=(0.5, -1.0))
+            self.calcium_text_item = pg.TextItem("", color=(220, 220, 220) if DARK_MODE else (0, 0, 0), anchor=(0.5, -1.0))
             self.view.addItem(self.calcium_text_item)
         
         self.calcium_text_item.setPos(neuron.x, neuron.y)
