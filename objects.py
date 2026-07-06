@@ -1,4 +1,3 @@
-# needs x,y coordinates and probably IDs
 from enum import Enum
 import numpy as np
 import calc
@@ -17,7 +16,6 @@ class Neuron:
         self.x = x
         self.y = y
         
-       
         self.v = -65.0  
         self.u = 0.0    
 
@@ -38,7 +36,6 @@ class Neuron:
         self.decay_acc_D_ex = 0.0
         self.decay_acc_D_in = 0.0
         
-
     def get_id(self):
         """returns the id of the neuron"""
         return self.id
@@ -70,22 +67,14 @@ class Neuron:
     def is_inhibitory(self):
         """returns True if the neuron is inhibitory, False otherwise"""
         return self.type == NeuronType.INHIBITORY
-    
-        
-
-class Synapse:
-    def __init__(self, from_neuron: Neuron, to_neuron: Neuron, weight, id:int = 0):
-        self.source_neuron = from_neuron
-        self.goal_neuron = to_neuron
-        self.weight = weight
-        self.id = id
 
 class Network:
+    """Class representing a network of neurons"""
     def __init__(self, num_neurons: int, excitatory_probability: float = 0.8, inhibitory_probability: float = 0.2, exact_percentage: bool = True):
         self.neurons = []
         self.num_neurons = num_neurons
 
-        #parameters for GUI controls
+        # Parameters for GUI controls
         self.v = 0.0001
         self.I_ext_mean = 5.0
         self.epsilon = 0.7       
@@ -95,10 +84,10 @@ class Network:
         self.eta_D = 0.1
         self.k = 1.0
 
-        #Synaptic current array rpresenting the total synaptic input current for each neuron
+        # Synaptic current array rpresenting the total synaptic input current for each neuron
         self.I_syn = np.zeros(num_neurons, dtype=float) 
 
-        #Caches for excitatory and inhibitory neuron types
+        # Caches for excitatory and inhibitory neuron types
         self._is_excitatory_cache = np.zeros(num_neurons, dtype=bool)
         self._is_inhibitory_cache = np.zeros(num_neurons, dtype=bool)
 
@@ -111,8 +100,6 @@ class Network:
             neuron_types = np.random.choice(types, size=num_neurons, p=probabilities)
             num_ex = np.sum(neuron_types == NeuronType.EXCITATORY) 
 
-        # TODO: With dynamic size, it seems as if the distances of the neutrons become too large so the kernel's probability becomes too low -> no synapses
-        # dynamic_size = 10*num_neurons
         extremes = [150, -150, 150, -150]
 
         # Building a collision avoiding grid to store remaining coordinates
@@ -156,10 +143,9 @@ class Network:
             self.neurons.append(neuron)
             self._is_inhibitory_cache[i] = True
                 
-        #Synapses are represented as a 2D array where the value at (i, j) represents the number of synapses from neuron i to neuron j
+        # Synapses are represented as a 2D array where the value at (i, j) represents the number of synapses from neuron i to neuron j
         self.synapses = np.zeros((num_neurons, num_neurons), dtype=int)
         self.kernel = self.calculate_distance_kernel(sigma=self.sigma)
-
 
     def get_neurons(self):
         """returns the list of neurons in the network"""
@@ -261,8 +247,3 @@ class Network:
         combined_matrix = self.synapses + self.synapses.T
         upper_triangle = np.triu(combined_matrix, k=1)
         return np.argwhere(upper_triangle != 0)
-
-        
-
-
-        

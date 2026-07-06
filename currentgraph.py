@@ -1,8 +1,9 @@
 from objects import Network
 import numpy as np
 import calc
-# class which manages every aspect of the current graph (neurons, synapses, transitions, ...) 
+
 class currentgraph():
+    """Represents the current state of the neural network graph, including neurons, synapses, and their positions"""
     def __init__(self, neuron_count: int, excitatory_probability: float = 0.8, inhibitory_probability: float = 0.2, exact_percentage: bool = True):
         self.network = Network(neuron_count, excitatory_probability, inhibitory_probability, exact_percentage)
         self.neurons = self.network.neurons
@@ -10,16 +11,12 @@ class currentgraph():
         self.synapses = self.network.synapses
         self.spiked_indices = []
 
-
-    
-
     def generate_synaptic_positions(self, neuron, axon_count, exc_count, inh_count, radius = 6):
+        """Generates the positions of synaptic elements around a neuron"""
         ax_x = []
         ax_y = []
-
         exc_x = []
         exc_y = []
-
         inh_x = []
         inh_y = []
 
@@ -29,30 +26,19 @@ class currentgraph():
         remaining_exc = exc_count
         remaining_inh = inh_count
 
-
         if total_count == 0:
             return (ax_x, ax_y,
                     exc_x, exc_y,
                     inh_x, inh_y)
 
-
-        # Random Rotation Offset
-        #offset = np.random.uniform(0, 2 * np.pi)
-
-
         # Angles for Synaptic Elements of one Neuron
         angles = np.linspace(0, 2*np.pi, total_count, endpoint=False)
 
         axon_angles = []
-
         exc_angles = []
-
         inh_angles = []
 
-        # Split Angles between Synapse Types
-
         i = 0
-
         while i < total_count:
             if (remaining_ax > 0):
                 axon_angles.append(angles[i])
@@ -69,7 +55,6 @@ class currentgraph():
                 i += 1
                 remaining_inh -= 1
 
-
         for angle in axon_angles:
 
             x = neuron.x + np.cos(angle) * radius
@@ -78,18 +63,14 @@ class currentgraph():
             ax_x.append(x)
             ax_y.append(y)
 
-
         for angle in exc_angles:
-
             x = neuron.x + np.cos(angle) * radius
             y = neuron.y + np.sin(angle) * radius
 
             exc_x.append(x)
             exc_y.append(y)
 
-
         for angle in inh_angles:
-
             x = neuron.x + np.cos(angle) * radius
             y = neuron.y + np.sin(angle) * radius
 
@@ -100,9 +81,8 @@ class currentgraph():
                 exc_x, exc_y,
                 inh_x, inh_y)
 
-
-
     def update_synaptic_elements(self):
+        """Updates the positions of synaptic elements for all neurons in the network"""
         all_ax_x = []
         all_ax_y = []
         
@@ -135,6 +115,7 @@ class currentgraph():
                 all_inh_x, all_inh_y)
 
     def update_slow_processes(self):
+        """Updates the slow processes in the network, including structural plasticity and synapse updates"""
         calc.structural_plasticity_step(self.network)
         self.update_synapses()
         
@@ -142,7 +123,9 @@ class currentgraph():
         self.spiked_indices = calc.electrical_activity_step(self.network)
 
     def update_synapses(self):
+        """Updates the synapses in the network"""
         self.synapses = self.network.synapses
 
     def get_active_synapses(self):
+        """Returns the indices of the active synapses in the network"""
         return self.network.get_undirected_connection_indices()

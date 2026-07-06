@@ -292,7 +292,7 @@ class simulation(QMainWindow):
         legend.addItem(self.in_spines, 'Inhibitory Spine')
         legend.addItem(self.axons, 'Axons')
 
-        # 
+        # Creating timer and worker (runs on separate thread)
         self.simulation_timer = QTimer()
 
         self.thread = QThread()
@@ -316,8 +316,8 @@ class simulation(QMainWindow):
             font-weight: bold;
             padding: 8px;
         """)
-        #Timer Speedup
-        
+
+        # Creating timer speedup slider
         timer_speed_layout = QHBoxLayout()
 
         self.timer_speed_txt = QLabel("Simulation Delay: 100")
@@ -337,10 +337,10 @@ class simulation(QMainWindow):
 
         layout.addLayout(timer_speed_layout)
 
-
-        # Timer Player
+        # Adding simulation controls
         timer_btn_layout = QHBoxLayout()
 
+        # Pause button
         self.timer_pause_btn = QPushButton("⏸")
         self.timer_pause_btn.clicked.connect(self.toggle_simulation)
         self.timer_pause_btn.setStyleSheet("background-color: green; color: black; font: bold 20px;")
@@ -350,11 +350,13 @@ class simulation(QMainWindow):
 
         button_layout = QHBoxLayout()
         
+        # Return button
         self.return_button = QPushButton("Return to Launcher")
         self.return_button.setStyleSheet("background-color: yellow; color: black; font: bold 14px;")
         self.return_button.clicked.connect(self.return_to_launcher)
         button_layout.addWidget(self.return_button)
 
+        # Exit button
         self.exit_button = QPushButton("Exit")
         self.exit_button.setStyleSheet("background-color: red; color: black; font: bold 14px;")
         self.exit_button.clicked.connect(self.close)
@@ -362,12 +364,12 @@ class simulation(QMainWindow):
 
         layout.addLayout(button_layout)
 
-        #Container for the collapsible controls
+        # Container for the collapsible controls
         self.controls_container = QWidget()
         controls_layout = QVBoxLayout(self.controls_container)
         controls_layout.setContentsMargins(0, 0, 0, 0) # Remove margins for a compact view
 
-        #Button to toggle controls
+        # Button to toggle controls
         self.toggle_controls_btn = QPushButton("▶ Expand Parameters")
         self.toggle_controls_btn.setCheckable(True)
         self.toggle_controls_btn.setChecked(True) # Startet eingeklappt
@@ -377,6 +379,7 @@ class simulation(QMainWindow):
         layout.addWidget(self.toggle_controls_btn)
         layout.addWidget(self.controls_container)
 
+        # Slider for external input current
         self.I_ext_label = QLabel(f"External Input (I_ext_mean): {self.graph.network.I_ext_mean:.1f} mV/ms")
         self.I_ext_slider = QSlider(Qt.Orientation.Horizontal)
         self.I_ext_slider.setMinimum(0)   # Corresponds to 0.0 mV/ms
@@ -386,6 +389,7 @@ class simulation(QMainWindow):
         controls_layout.addWidget(self.I_ext_slider)
         self.I_ext_slider.setValue(int(self.graph.network.I_ext_mean * 10))
 
+        # Slider for growth rate
         self.v_label = QLabel(f"Growth Rate (v): {self.graph.network.v:.4f}")
         self.v_slider = QSlider(Qt.Orientation.Horizontal)
         self.v_slider.setMinimum(1)
@@ -395,6 +399,7 @@ class simulation(QMainWindow):
         controls_layout.addWidget(self.v_label)
         controls_layout.addWidget(self.v_slider)
 
+        # Slider for stress set point
         self.eps_label = QLabel(f"Stress Set-Point (epsilon): {self.graph.network.epsilon:.2f}")
         self.eps_slider = QSlider(Qt.Orientation.Horizontal)
         self.eps_slider.setMinimum(30)   
@@ -414,7 +419,7 @@ class simulation(QMainWindow):
         controls_layout.addWidget(self.tau_label)
         controls_layout.addWidget(self.tau_slider)
 
-        #Slider for Distance Kernel (Sigma)
+        # Slider for Distance Kernel (Sigma)
         self.sigma_label = QLabel(f"Kernel Range (Sigma): {self.graph.network.sigma:.0f} µm")
         self.sigma_slider = QSlider(Qt.Orientation.Horizontal)
         self.sigma_slider.setMinimum(2)   # Corresponds to 100
@@ -424,7 +429,7 @@ class simulation(QMainWindow):
         controls_layout.addWidget(self.sigma_label)
         controls_layout.addWidget(self.sigma_slider)
 
-        #Slider for eta_A (Axon)
+        # Slider for eta_A (Axon)
         self.eta_a_label = QLabel(f"Max Ca for Axons (eta_A): {self.graph.network.eta_A:.2f}")
         self.eta_a_slider = QSlider(Qt.Orientation.Horizontal)
         self.eta_a_slider.setMinimum(0)  # Corresponds to 0.0
@@ -434,7 +439,7 @@ class simulation(QMainWindow):
         controls_layout.addWidget(self.eta_a_label)
         controls_layout.addWidget(self.eta_a_slider)
 
-        #Slider for eta_D (Dendrite)
+        # Slider for eta_D (Dendrite)
         self.eta_d_label = QLabel(f"Max Ca for Dendrites (eta_D): {self.graph.network.eta_D:.2f}")
         self.eta_d_slider = QSlider(Qt.Orientation.Horizontal)
         self.eta_d_slider.setMinimum(0)   # Corresponds to 0.0
@@ -457,7 +462,7 @@ class simulation(QMainWindow):
         self.toggle_controls(True) 
         
     def toggle_controls(self, checked):
-        """Toggles the visibility of the controls container."""
+        """Toggles the visibility of the controls container"""
         if checked:
             self.controls_container.setVisible(False)
             self.toggle_controls_btn.setText("▶ Expand Parameters")
@@ -466,63 +471,63 @@ class simulation(QMainWindow):
             self.toggle_controls_btn.setText("▼ Collapse Parameters")
 
     def update_I_ext_mean(self, value):
-        """Updates the external input mean."""
+        """Updates the external input mean"""
         val = value / 10.0
         self.graph.network.I_ext_mean = val
         self.I_ext_label.setText(f"External Input (I_ext_mean): {val:.1f} mV/ms")
 
     def update_v(self, value):
-        """Updates the growth rate."""
+        """Updates the growth rate"""
         val = value / 10000.0
         self.graph.network.v = val
         
         self.v_label.setText(f"Growth Rate (v): {val:.4f}")
 
     def update_epsilon(self, value):
-        """Updates the stress set-point."""
+        """Updates the stress set-point"""
         float_val = value / 100.0
         self.graph.network.epsilon = float_val
         self.eps_label.setText(f"Stress Set-Point (epsilon): {float_val:.2f}")
 
     def update_tau_ca(self, value):
-        """Updates the calcium decay."""
+        """Updates the calcium decay"""
         val = float(value)
         self.graph.network.tau_ca = val
         self.tau_label.setText(f"Calcium Decay (tau_Ca): {val:.0f} ms")
 
     def update_sigma(self, value):
-        """Updates the distance kernel."""
+        """Updates the distance kernel"""
         val = value * 50
         self.graph.network.sigma = val
         self.sigma_label.setText(f"Kernel Range (sigma): {val:.0f} µm")
         self.graph.network.kernel = self.graph.network.calculate_distance_kernel(sigma=val)
 
     def update_eta_a(self, value):
-        """Updates the maximum calcium level for axons."""
+        """Updates the maximum calcium level for axons"""
         val = value / 100.0
         self.graph.network.eta_A = val
         self.eta_a_label.setText(f"Max Ca for Axons (eta_A): {val:.2f}")
 
     def update_eta_d(self, value):
-        """Updates the maximum calcium level for dendrites."""
+        """Updates the maximum calcium level for dendrites"""
         val = value / 100.0
         self.graph.network.eta_D = val
         self.eta_d_label.setText(f"Max Ca for Dendrites (eta_D): {val:.2f}")
 
     def update_k(self, value):
-        """Updates the synapse conductance."""
+        """Updates the synapse conductance"""
         val = value / 100.0  
         self.graph.network.k = val
         self.k_label.setText(f"Synapse Conductance (k): {val:.2f}")
 
     def update_speed_control(self, value):
-        """Updates the simulation speed control."""
+        """Updates the simulation speed control"""
         self.worker.speed_control = value
         self.timer_speed_txt.setText(f"Simulation Delay: {value}")
 
 
     def update_gui_elements(self, adj, ax_x, ax_y, exc_x, exc_y, inh_x, inh_y, counter):
-        """Updates the GUI elements."""
+        """Updates the GUI elements (neurons, synaptic elements, timer, calcium levels)"""
         self.mutex.lock()
         self.elapsed_ms = counter
         self.draw_synapses(adj)
@@ -530,6 +535,7 @@ class simulation(QMainWindow):
         self.draw_spiking_neurons()
         self.display_time()
 
+        # Display calcium level of a neuron when clicked
         if self.selected_neuron_index is not None and self.calcium_text_item:
             neuron = self.graph.network.get_neuron_by_index(self.selected_neuron_index)
             text = f"Ca: {neuron.calcium_level:.4f}"
@@ -537,7 +543,7 @@ class simulation(QMainWindow):
         self.mutex.unlock()
 
     def fetch_and_update_gui(self):
-        """Fetches data from the graph and updates the GUI."""
+        """Fetches data from the graph and updates the GUI"""
         self.mutex.lock()
         ax_x, ax_y, exc_x, exc_y, inh_x, inh_y = self.graph.update_synaptic_elements()
         active_synapses = self.graph.get_active_synapses()
@@ -547,7 +553,7 @@ class simulation(QMainWindow):
         self.update_gui_elements(active_synapses, ax_x, ax_y, exc_x, exc_y, inh_x, inh_y, counter_val) 
         
     def display_time(self):
-        """Displays the elapsed time."""
+        """Displays the elapsed time"""
         total_seconds = self.elapsed_ms // 1000
         minutes = total_seconds // 60
         seconds = total_seconds % 60
@@ -555,7 +561,7 @@ class simulation(QMainWindow):
         self.time_overlay.setText(f"{minutes:02d}:{seconds:02d}.{tenth_seconds:01d}")
 
     def toggle_simulation(self):
-        """Toggles the simulation."""
+        """Toggles the simulation"""
         if self.simulation_timer.isActive():
             self.worker.pause()
             self.simulation_timer.stop()
@@ -566,7 +572,7 @@ class simulation(QMainWindow):
             self.timer_pause_btn.setText("⏸")
 
     def closeEvent(self, event):
-        """Ensure the worker thread is properly shut down on window close."""
+        """Ensure the worker thread is properly shut down on window close"""
         self.worker.stop()
         self.thread.quit()
         self.thread.wait()
@@ -583,29 +589,24 @@ class simulation(QMainWindow):
             NeuronType.INHIBITORY: {"symbol": "o", "brush": (46, 0, 213)},
         }
 
-
         # Plotting Data
         symbols = [TYPE_CONFIG[NeuronType(int(getattr(n.type, 'value', n.type)))]["symbol"] for n in self.neurons]
         colors  = [TYPE_CONFIG[NeuronType(int(getattr(n.type, 'value', n.type)))]["brush"] for n in self.neurons]
 
-
-        # Plotting
+        # Draw neurons and synaptic elements
         self.network_graph.setData(pos=pos, pen=pg.mkPen(color=(150, 150, 150), width=2), size=12, symbol=symbols, symbolBrush=colors, symbolPen=None, pxMode=False)
-
         empty_adj = np.empty((0, 2), dtype=int)
         self.synapse_lines.setData(pos=pos, adj=empty_adj, pen=pg.mkPen(color=(120,120,120,100), width=1.5), size=0, symbol='o')
-
         self.draw_synaptic_elements(*self.graph.update_synaptic_elements())
         
-    
     def draw_synaptic_elements(self, ax_x, ax_y, exc_x, exc_y, inh_x, inh_y):
-        """Draws the synaptic elements."""
+        """Draws the synaptic elements"""
         self.axons.setData(x = ax_x, y = ax_y)
         self.ex_spines.setData(x = exc_x, y = exc_y)
         self.in_spines.setData(x = inh_x, y = inh_y)
 
     def draw_synapses(self, active_synapses):
-        """Draws the synapses."""
+        """Draws the synapses"""
         pos = self.graph.neuron_positions
         pen_color = (120, 120, 120, 100)
 
@@ -616,6 +617,7 @@ class simulation(QMainWindow):
         if len(active_synapses) == 0:
             active_synapses = np.empty((0, 2), dtype=int)
         else:
+            # Display number of synapses (for connection with multiple synapses)
             for from_idx, to_idx in active_synapses:
                 count = self.graph.network.get_amount_of_synapses(from_idx, to_idx)
                 if count > 1:
@@ -629,6 +631,7 @@ class simulation(QMainWindow):
         self.synapse_lines.setData(pos=pos, adj=active_synapses, pen=pg.mkPen(color=pen_color, width=1.5), size=0, symbol='o')
 
     def draw_spiking_neurons(self):
+        """Highlight spiking neurons (spike during latest simulation update)"""
         spiking_neurons = self.graph.spiked_indices
 
         if len(spiking_neurons) == 0:
@@ -639,7 +642,7 @@ class simulation(QMainWindow):
         QTimer.singleShot(100, lambda: self.spike_overlay.setData(pos=[]))
 
     def return_to_launcher(self):
-        """Return to the launcher."""
+        """Return to the launcher"""
         self.launcher = guilauncher()
         self.launcher.show()
         self.worker.stop()
@@ -648,7 +651,7 @@ class simulation(QMainWindow):
         self.close()
     
     def on_view_clicked(self, event):
-        """Handles clicks on the view."""
+        """Handles clicks on the view"""
         points = self.network_graph.scatter.pointsAt(event.pos())
         if len(points) == 0:
             if self.calcium_text_item:
@@ -657,7 +660,7 @@ class simulation(QMainWindow):
                 self.selected_neuron_index = None
 
     def on_neuron_clicked(self, scatter_item, points):
-        """Handles clicks on neurons."""
+        """Handles clicks on neurons"""
         if not points:
             self.view.removeItem(self.calcium_text_item)
             return

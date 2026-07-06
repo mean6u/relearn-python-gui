@@ -4,8 +4,8 @@ from typing import Tuple, List
 import numpy as np
 
 def step_electrical(neuron, I: float, dt:float = 1.0) -> bool:
-    """updates the electrical activity of a neuron based on the Izhikevich model. 
-    Returns True if the neuron spikes."""
+    """updates the electrical activity of a neuron based on the Izhikevich model 
+    Returns True if the neuron spikes"""
  
     #Izhikevich Modell (a=0.1, b=0.2, c=-65.0, d=2.0)
 
@@ -31,8 +31,8 @@ def step_calcium(neuron, tau_ca: float = 10000.0, dt: float = 1.0):
     neuron.calcium_level += dCa_dt*dt
 
 def calculate_growth_rate(neuron, eta: float, epsilon: float = 0.7, v: float = 0.0001) -> float:
-    """Calculates the growth rate of synaptic elements.
-    Returns the growth rate of synaptic elements."""
+    """Calculates the growth rate of synaptic elements
+    Returns the growth rate of synaptic elements"""
 
     xi_z = (eta + epsilon)/2
     zeta_z = (eta - epsilon) / (2 * np.sqrt(-np.log(0.5)))
@@ -45,11 +45,11 @@ def calculate_growth_rate(neuron, eta: float, epsilon: float = 0.7, v: float = 0
     return dz_dt
 
 def update_structural_elements(neuron, bound_A: int, bound_D_ex: int, bound_D_in: int, v: float, epsilon: float, eta_A: float = 0.4, eta_D: float = 0.1, dt: float = 100.0):
-    """Updates the structural elements of a neuron.
-    Returns the number of synaptic elements to be deleted."""
+    """Updates the structural elements of a neuron
+    Returns the number of synaptic elements to be deleted"""
 
-    #Update the structural elements based on the growth rate. 
-    #max is used to ensure that the number of synaptic elements does not go below zero.
+    # Update the structural elements based on the growth rate
+    # max is used to ensure that the number of synaptic elements does not go below zero.
     neuron.A = max(0.0, neuron.A + calculate_growth_rate(neuron, eta=eta_A, epsilon=epsilon,v=v) * dt)
     neuron.D_ex = max(0.0, neuron.D_ex + calculate_growth_rate(neuron, eta=eta_D, epsilon=epsilon, v=v) * dt)
     neuron.D_in = max(0.0, neuron.D_in + calculate_growth_rate(neuron, eta=eta_D, epsilon=epsilon, v=v) * dt)
@@ -59,15 +59,15 @@ def update_structural_elements(neuron, bound_A: int, bound_D_ex: int, bound_D_in
     new_D_ex = int(neuron.D_ex)
     new_D_in = int(neuron.D_in)
 
-    #Updates the number of vacant synaptic elements based on the number of bound synaptic elements. 
-    #max is used to ensure that the number of vacant synaptic elements does not go below zero.
+    # Updates the number of vacant synaptic elements based on the number of bound synaptic elements
+    # max is used to ensure that the number of vacant synaptic elements does not go below zero
     neuron.vac_A = max(0, new_A - bound_A)
     neuron.vac_D_ex = max(0, new_D_ex - bound_D_ex)
     neuron.vac_D_in =  max(0, new_D_in - bound_D_in)
 
     tau_vac = 10.0
 
-    #Axonal update
+    # Axonal update
     if neuron.vac_A > 0:
         neuron.decay_acc_A += neuron.vac_A / tau_vac
         decayed = int(neuron.decay_acc_A)
@@ -76,7 +76,7 @@ def update_structural_elements(neuron, bound_A: int, bound_D_ex: int, bound_D_in
             neuron.A -= decayed
             neuron.vac_A -= decayed
 
-    #Dendritic excitatory update
+    # Dendritic excitatory update
     if neuron.vac_D_ex > 0:
         neuron.decay_acc_D_ex += neuron.vac_D_ex / tau_vac
         decayed = int(neuron.decay_acc_D_ex)
@@ -85,7 +85,7 @@ def update_structural_elements(neuron, bound_A: int, bound_D_ex: int, bound_D_in
             neuron.D_ex -= decayed
             neuron.vac_D_ex -= decayed
 
-    #Dendritic inhibitory update
+    # Dendritic inhibitory update
     if neuron.vac_D_in > 0:
         neuron.decay_acc_D_in += neuron.vac_D_in / tau_vac
         decayed = int(neuron.decay_acc_D_in)
@@ -94,14 +94,14 @@ def update_structural_elements(neuron, bound_A: int, bound_D_ex: int, bound_D_in
             neuron.D_in -= decayed
             neuron.vac_D_in -= decayed
 
-    #Calculates the number of synaptic elements to be deleted based on the difference between the bound and new synaptic elements.
+    # Calculates the number of synaptic elements to be deleted based on the difference between the bound and new synaptic elements.
     delta_A = max(0, bound_A - new_A)
     delta_D_ex = max(0, bound_D_ex - new_D_ex)
     delta_D_in = max(0, bound_D_in - new_D_in)
     return delta_A, delta_D_ex, delta_D_in
 
 def calculate_kernel_value(neuron_out, neuron_in, sigma: float = 5.0 * 150.0):
-    """Returns the kernel value based on the euclidean distance between the two neurons."""
+    """Returns the kernel value based on the euclidean distance between the two neurons"""
 
     dist_sq = (neuron_out.x - neuron_in.x)**2 + (neuron_out.y - neuron_in.y)**2
     return math.exp(-dist_sq / sigma**2)
@@ -120,8 +120,8 @@ def calculate_distance_kernel(network, sigma: float = 5.0 * 150.0) -> np.ndarray
     return value_matrix
 
 def electrical_activity_step(network):
-    """Updates the electrical activity of all neurons in the network for one time step.
-    This includes updating the membrane potential and calcium level of each neuron."""
+    """Updates the electrical activity of all neurons in the network for one time step
+    This includes updating the membrane potential and calcium level of each neuron"""
 
     spiked_index = []
 
@@ -132,7 +132,7 @@ def electrical_activity_step(network):
         I_ext = np.random.normal(network.I_ext_mean, 1.0)
         I_total = I_ext + network.k * network.I_syn[i]
 
-        #feuer frei!!!
+        # Feuer frei!!!11!!1!!!
         if step_electrical(neuron, I_total):
             spiked_index.append(i)
                      
@@ -146,7 +146,7 @@ def electrical_activity_step(network):
     return spiked_index
 
 def execute_deletions(network, deletion_requests):
-    """Executes the deletion of synaptic elements based on the deletion requests.
+    """Executes the deletion of synaptic elements based on the deletion requests
     Each deletion request is a tuple of (neuron_index, delta_A, delta_D_ex, delta_D_in)""" 
 
     for neuron_index, dA, dD_ex, dD_in in deletion_requests:
@@ -210,11 +210,10 @@ def execute_deletions(network, deletion_requests):
              
 
 def structural_plasticity_step(network):
-    """Updates the structural plasticity of all neurons in the network for 100 time step.
+    """Updates the structural plasticity of all neurons in the network for 100 time step
     This includes updating the number of synaptic elements executing deletions and creating new connections"""
 
     deletion_requests = []
-
     for neuron_index, neuron in enumerate(network.neurons):
         bound_A = network.get_amount_of_bound_axons(neuron_index)
         bound_D_ex, bound_D_in = network.get_amount_of_bound_dendrites(neuron_index)
@@ -226,8 +225,8 @@ def structural_plasticity_step(network):
     
 
 def assign_vacant_elements(network) -> list:
-    """Assigns vacant synaptic elements to create potential connections between neurons.
-    Returns a list of tuples representing the potential connections (outgoing_neuron, incoming_neuron)."""
+    """Assigns vacant synaptic elements to create potential connections between neurons
+    Returns a list of tuples representing the potential connections (outgoing_neuron, incoming_neuron)"""
 
     # Storing the free synaptic elements for each neuron (index i is the respective number of free element for the i-th neuron)
     free_a_ex = [neuron.vac_A if neuron.is_excitatory() else 0 
@@ -238,7 +237,6 @@ def assign_vacant_elements(network) -> list:
     free_d_in = [neuron.vac_D_in for neuron in network.neurons]
 
     # Storing the total number of axonal / dendritic excitatory / inhibitory elements in a dictionary (four elements)
-    # TODO Make more efficient
     sums = {"axonal excitatory": sum(free_a_ex), "axonal inhibitory": sum(free_a_in) , "dendritic excitatory": sum(free_d_ex), "dendritic inhibitory": sum(free_d_in)}
     
     # Creating list of assigned elements: ([outgoing_neuron], [incoming_neuron])
@@ -304,7 +302,7 @@ def assign_vacant_elements(network) -> list:
 
 def check_assignment(network, assignments) -> list:
     """Checks the assigned synaptic elements against the distance kernel 
-    Returns the actual synapses that will be created."""
+    Returns the actual synapses that will be created"""
     actual_synapses: list = []
     for neuron_pair in assignments:
         outgoing, incoming = neuron_pair
@@ -314,7 +312,7 @@ def check_assignment(network, assignments) -> list:
 
 
 def create_random_connection(network):
-    """Creates a random connection between two neurons."""
+    """Creates a random connection between two neurons"""
     potential_synapses = assign_vacant_elements(network)
     assigments = check_assignment(network, potential_synapses)
     if len(assigments) == 0:
