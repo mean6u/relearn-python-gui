@@ -219,13 +219,13 @@ class simulation(QMainWindow):
         self.graph = currentgraph(neuron_count, exc_count/100, (100-exc_count)/100)
         self.neurons = self.graph.neurons
 
-        
-      
+        # Configuring window
         pg.setConfigOptions(antialias=True)
-        self.setWindowTitle("RELeARN - Structural Plasiticity Simulation")
+        self.setWindowTitle("RELeARN - Structural Plasticity Simulation")
         self.resize(800, 600)
         self.setWindowIcon(QIcon('plasticity.jpg'))
-    
+
+        # Creating simulation widget
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
         layout = QVBoxLayout(central_widget)
@@ -236,14 +236,16 @@ class simulation(QMainWindow):
             self.plot_widget.setBackground("#000000")
         else:
             self.plot_widget.setBackground("#ffffff")
-        
+
         layout.addWidget(self.plot_widget)
 
+        # Setting up widget
         self.view = self.plot_widget.addViewBox()
         self.view.setAspectLocked(True)
 
         self.view.scene().sigMouseClicked.connect(self.on_view_clicked)
 
+        # Creating graph items
         self.network_graph = pg.GraphItem()
         self.synapse_lines = pg.GraphItem()
         self.calcium_text_item = None
@@ -251,8 +253,8 @@ class simulation(QMainWindow):
         self.selected_neuron_index = None  
         self.network_graph.scatter.sigClicked.connect(self.on_neuron_clicked)
 
-        self.view.addItem(self.synapse_lines)
         self.view.addItem(self.network_graph)
+        self.view.addItem(self.synapse_lines)
 
         #Excitatory Dendritic Spines
         self.ex_spines = pg.ScatterPlotItem(size=2, symbol='s', brush=(231, 76, 60), pen=None, pxMode=False)
@@ -267,7 +269,7 @@ class simulation(QMainWindow):
         self.spike_overlay = pg.ScatterPlotItem(size=12, symbol="o", brush=pg.mkBrush(255, 230, 0, 220), pen=pg.mkPen(255, 255, 0, 255, width=2), pxMode=False)
         self.spike_overlay.setZValue(10)
   
-
+        # Adding synaptic elements
         self.view.addItem(self.ex_spines)
         self.view.addItem(self.in_spines)
         self.view.addItem(self.axons)
@@ -275,11 +277,12 @@ class simulation(QMainWindow):
 
         self.spawn_neurons()
 
-        #Legend
+        # Adding legend symbols for neurons
         ex_neuron_symbol = pg.ScatterPlotItem(symbol = 'o', brush = (231, 76, 60), pen=None)
         in_neuron_symbol = pg.ScatterPlotItem(symbol = 'o', brush = (46, 0, 213), pen=None)
         spiking_neuron_symbol = pg.ScatterPlotItem(symbol = 'o', brush = (255, 230, 0), pen=None)
 
+        # Creating key
         legend = pg.LegendItem((80,60), offset=(0,0))
         legend.setParentItem(self.view)
         legend.addItem(ex_neuron_symbol, 'Excitatory Neuron')
@@ -289,6 +292,7 @@ class simulation(QMainWindow):
         legend.addItem(self.in_spines, 'Inhibitory Spine')
         legend.addItem(self.axons, 'Axons')
 
+        # 
         self.simulation_timer = QTimer()
 
         self.thread = QThread()
@@ -336,22 +340,11 @@ class simulation(QMainWindow):
 
         # Timer Player
         timer_btn_layout = QHBoxLayout()
-        """
-        self.timer_rewind_btn = QPushButton("⏮")
-        self.timer_rewind_btn.clicked.connect(self.rewind_time)
-        self.timer_rewind_btn.setStyleSheet("background-color: grey; color: white; font: bold 20px; border-color: red;")
-        timer_btn_layout.addWidget(self.timer_rewind_btn)"""
 
         self.timer_pause_btn = QPushButton("⏸")
         self.timer_pause_btn.clicked.connect(self.toggle_simulation)
         self.timer_pause_btn.setStyleSheet("background-color: green; color: black; font: bold 20px;")
         timer_btn_layout.addWidget(self.timer_pause_btn)
-
-        """
-        self.timer_forward_btn = QPushButton("⏭")
-        self.timer_forward_btn.clicked.connect(self.forward_time)
-        self.timer_forward_btn.setStyleSheet("background-color: grey; color: white; font: bold 20px;")
-        timer_btn_layout.addWidget(self.timer_forward_btn)"""
 
         layout.addLayout(timer_btn_layout)
 
@@ -518,7 +511,7 @@ class simulation(QMainWindow):
 
     def update_k(self, value):
         """Updates the synapse conductance."""
-        val = value / 100.0  # Scale the integer value from the slider to a float
+        val = value / 100.0  
         self.graph.network.k = val
         self.k_label.setText(f"Synapse Conductance (k): {val:.2f}")
 
@@ -579,13 +572,11 @@ class simulation(QMainWindow):
         self.thread.wait()
         event.accept()
 
-
     def spawn_neurons(self):
         """Spawn Neurons (based on User Input)"""
         # Positions of the Neurons
         pos = self.graph.neuron_positions
         
-
         # Types of the Neurons
         TYPE_CONFIG = {
             NeuronType.EXCITATORY: {"symbol": "o", "brush": (231, 76, 60)},
@@ -607,7 +598,6 @@ class simulation(QMainWindow):
         self.draw_synaptic_elements(*self.graph.update_synaptic_elements())
         
     
-
     def draw_synaptic_elements(self, ax_x, ax_y, exc_x, exc_y, inh_x, inh_y):
         """Draws the synaptic elements."""
         self.axons.setData(x = ax_x, y = ax_y)
@@ -682,9 +672,3 @@ class simulation(QMainWindow):
         
         self.calcium_text_item.setPos(neuron.x, neuron.y)
         self.calcium_text_item.setText(f"Ca: {neuron.calcium_level:.4f}")
-
-if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    gui = guilauncher()
-    gui.show()
-    sys.exit(app.exec())
