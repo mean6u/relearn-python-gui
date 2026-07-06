@@ -112,8 +112,8 @@ class Network:
             num_ex = np.sum(neuron_types == NeuronType.EXCITATORY) 
 
         # TODO: With dynamic size, it seems as if the distances of the neutrons become too large so the kernel's probability becomes too low -> no synapses
-        # dynamic_size = 10*num_neurons
-        extremes = [150, -150, 150, -150]
+        dynamic_size = 15*num_neurons
+        extremes = [dynamic_size, -dynamic_size, dynamic_size, -dynamic_size]
 
         # Building a collision avoiding grid to store remaining coordinates
         remaining_x = np.arange(extremes[1], extremes[0] + 1)
