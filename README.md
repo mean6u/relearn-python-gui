@@ -1,7 +1,7 @@
 # Project Description: RELeARN Python GUI
 
 ## Screenshot
-![GUI] (screenshot.png)
+![GUI](screenshot.png)
 
 ## Short Description
 
