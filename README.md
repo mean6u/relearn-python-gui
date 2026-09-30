@@ -1,5 +1,8 @@
 # Project Description: RELeARN Python GUI
 
+## Screenshot
+![GUI] (screenshot.png)
+
 ## Short Description
 
 This project is a Python-based GUI application for simulating structural plasticity in neural networks. The application visualizes a network of excitatory and inhibitory neurons, their electrical activity, calcium dynamics, synaptic elements, and synapses that are created or removed over time.
